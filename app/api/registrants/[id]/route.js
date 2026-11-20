@@ -51,3 +51,22 @@ export async function PATCH(req, { params }) {
   if (!saved) return NextResponse.json({ error: 'Data tidak ditemukan.' }, { status: 404 });
   return NextResponse.json({ registrant: saved });
 }
+
+// Hapus PERMANEN — KHUSUS ADMIN (untuk data spam / bekas percobaan). Guru hanya bisa mengarsipkan (PATCH action 'cancel').
+export async function DELETE(_req, { params }) {
+  const auth = await requireUser(['ADMIN']);
+  if (auth.error) {
+    const msg = auth.status === 403 ? 'Hanya Admin yang dapat menghapus data. Gunakan Arsip untuk menyingkirkan data.' : auth.error;
+    return NextResponse.json({ error: msg }, { status: auth.status });
+  }
+  if (!/^[0-9a-f-]{36}$/i.test(params.id)) return NextResponse.json({ error: 'ID data tidak valid.' }, { status: 400 });
+
+  const { data, error } = await db().from('registrants').delete().eq('id', params.id).select('id,registration_id,nama_siswa');
+  if (error) {
+    console.error('DELETE /api/registrants:', error);
+    return NextResponse.json({ error: 'Gagal menghapus data.' }, { status: 500 });
+  }
+  if (!data || data.length === 0) return NextResponse.json({ error: 'Data tidak ditemukan atau sudah dihapus.' }, { status: 404 });
+  console.info(`[AUDIT] ${auth.user.username} menghapus permanen ${data[0].registration_id} (${data[0].nama_siswa})`);
+  return NextResponse.json({ ok: true, deleted: data[0].id });
+}

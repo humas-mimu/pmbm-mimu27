@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Archive, FileSpreadsheet, FileText, Loader2, Pencil, Printer, RotateCcw, Search } from 'lucide-react';
+import { Archive, FileSpreadsheet, FileText, Loader2, Pencil, Printer, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { Badge, Modal } from './ui';
 import HScroll from './HScroll';
 import { fmtDateShort, fmtDateTime } from '@/lib/utils';
@@ -17,6 +17,7 @@ export default function RekapClient({ role }) {
   const [jalur, setJalur] = useState('ALL');
   const [prog, setProg] = useState('ALL');
   const [cancelRow, setCancelRow] = useState(null);
+  const [delRow, setDelRow] = useState(null);       // data yang akan dihapus permanen (khusus Admin)
   const [reason, setReason] = useState('');
   const [busyId, setBusyId] = useState(null);
 
@@ -66,6 +67,18 @@ export default function RekapClient({ role }) {
   }
   async function doCancel() {
     if (await patch(cancelRow.id, { action: 'cancel', reason })) { setCancelRow(null); setReason(''); }
+  }
+
+  async function doDelete() {
+    setBusyId(delRow.id);
+    try {
+      const r = await fetch(`/api/registrants/${delRow.id}`, { method: 'DELETE' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { alert(j.error || 'Gagal menghapus data.'); return; }
+      setRows((p) => p.filter((x) => x.id !== delRow.id));
+      setDelRow(null);
+    } catch { alert('Tidak dapat terhubung ke server.'); }
+    finally { setBusyId(null); }
   }
 
   function exportData(kind) {
@@ -153,6 +166,10 @@ export default function RekapClient({ role }) {
                       {r.status === 'ACTIVE'
                         ? <button onClick={() => { setCancelRow(r); setReason(''); }} className="btn-ghost !px-2.5 !py-1.5 !text-xs !text-red-600"><Archive size={13} />Cancel</button>
                         : <button onClick={() => patch(r.id, { action: 'restore' })} disabled={busyId === r.id} className="btn-ghost !px-2.5 !py-1.5 !text-xs"><RotateCcw size={13} />Pulihkan</button>}
+                      {role === 'ADMIN' && (
+                        <button onClick={() => setDelRow(r)} disabled={busyId === r.id} title="Hapus permanen (khusus Admin)" aria-label="Hapus permanen"
+                          className="btn-ghost !px-2.5 !py-1.5 !text-xs !text-red-600 hover:!bg-red-50"><Trash2 size={14} /></button>
+                      )}
                     </div>
                     {cnt === 0 && <div className="mt-1 max-w-[230px] whitespace-normal text-[10px] text-amber-700">Centang minimal 1 persyaratan berkas untuk mencetak Bukti Pendaftaran.</div>}
                   </td>
@@ -162,6 +179,21 @@ export default function RekapClient({ role }) {
           </tbody>
         </table>
       </HScroll>
+
+      <Modal open={!!delRow} onClose={() => setDelRow(null)} title="Hapus Data Permanen?" tone="warn">
+        {delRow && (
+          <>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <b>{delRow.nama_siswa}</b> ({delRow.registration_id}){delRow.status === 'CANCELLED' ? ' — data arsip' : ' — pendaftar aktif'} akan dihapus <b>PERMANEN</b> dari database dan <b>tidak bisa dikembalikan</b>.
+            </div>
+            <p className="mt-3 text-sm text-slate-600">Gunakan hanya untuk data spam atau bekas percobaan. Bila siswa sekadar mengundurkan diri, pakai <b>Cancel (Arsip)</b> agar datanya tetap tersimpan.</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="btn-ghost" onClick={() => setDelRow(null)}>Batal</button>
+              <button className="btn-danger" onClick={doDelete} disabled={busyId === delRow.id}>{busyId === delRow.id ? 'Menghapus…' : 'Ya, Hapus Permanen'}</button>
+            </div>
+          </>
+        )}
+      </Modal>
 
       <Modal open={!!cancelRow} onClose={() => setCancelRow(null)} title="Arsipkan Pendaftar?">
         {cancelRow && (

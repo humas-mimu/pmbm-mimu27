@@ -5,7 +5,7 @@ import SocialShowcase from '@/components/SocialShowcase';
 import galeri from '@/lib/galeri.json';
 import { getSettings } from '@/lib/settings';
 import { getUser } from '@/lib/auth';
-import { waLink } from '@/lib/utils';
+import { waPanitia } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
@@ -61,7 +61,7 @@ export default async function Home() {
       <section className="rounded-3xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900 sm:p-6">
         <b>Kesulitan mendaftar online?</b> Anda dapat mengambil formulir tulis tangan di panitia, mengisinya, lalu menyerahkannya kembali. Petugas kami yang akan memasukkan datanya ke sistem.
         <div>
-          <a href={waLink(settings.committee_whatsapp, 'Halo Panitia PMBM, saya ingin bertanya tentang pendaftaran.')} target="_blank" rel="noopener noreferrer" className="pbtn-wa mt-3 !py-2.5">
+          <a href={waPanitia(settings.committee_whatsapp)} target="_blank" rel="noopener noreferrer" className="pbtn-wa mt-3 !py-2.5">
             <MessageCircle size={16} />Hubungi Panitia
           </a>
         </div>

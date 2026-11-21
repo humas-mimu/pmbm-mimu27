@@ -96,7 +96,7 @@ export default function HScroll({ children, className = '' }) {
         {children}
       </div>
       {canScroll && (
-        <div ref={bot} onScroll={(e) => onScrollOf(e.currentTarget)} aria-hidden="true" className={`sticky bottom-1 z-20 mt-2 ${bar(showBottom)}`}>
+        <div ref={bot} onScroll={(e) => onScrollOf(e.currentTarget)} aria-hidden="true" className={`sticky bottom-16 z-20 mt-2 lg:bottom-1 ${bar(showBottom)}`}>
           <div style={{ height: 1, width: sw }} />
         </div>
       )}

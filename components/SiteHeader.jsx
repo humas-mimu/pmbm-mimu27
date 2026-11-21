@@ -51,6 +51,7 @@ export default function SiteHeader({ settings, user }) {
   }
 
   return (
+    <>
     <header className="no-print sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur">
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="flex h-16 items-center justify-between gap-3 sm:h-20">
@@ -111,11 +112,6 @@ export default function SiteHeader({ settings, user }) {
 
         {open && (
           <div className="space-y-1 border-t border-slate-100 pb-4 pt-3 lg:hidden">
-            {links.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm ${cls(href)}`}>
-                <Icon size={16} />{label}
-              </Link>
-            ))}
             {user ? (
               <div className="mt-2 space-y-1 border-t border-slate-100 pt-3">
                 <div className="flex items-center gap-3 px-1 pb-2">
@@ -134,5 +130,20 @@ export default function SiteHeader({ settings, user }) {
         )}
       </div>
     </header>
+
+    {/* Navbar bawah khusus HP: ikon saja (nama menu tetap terbaca oleh screen reader & muncul saat ditahan). Di luar <header> karena backdrop-blur-nya memutus posisi fixed. */}
+    <nav aria-label="Menu utama" className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur lg:hidden">
+      <ul className="mx-auto flex h-14 max-w-md items-stretch justify-around px-2">
+        {links.map(({ href, label, icon: Icon }) => (
+          <li key={href} className="flex-1">
+            <Link href={href} aria-label={label} title={label} aria-current={path === href ? 'page' : undefined}
+              className={`flex h-full items-center justify-center transition ${path === href ? 'text-emerald-700' : 'text-slate-500 hover:text-emerald-700'}`}>
+              <span className={`grid h-10 w-12 place-items-center rounded-2xl ${path === href ? 'bg-emerald-50 ring-1 ring-emerald-200' : ''}`}><Icon size={22} /></span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    </>
   );
 }

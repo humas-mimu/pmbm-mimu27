@@ -261,7 +261,7 @@ export default function UkuranClient({ role }) {
 
       {/* Bilah simpan melayang: selalu terjangkau walau daftar panjang */}
       {dirtyCount > 0 && !panel && (
-        <div data-keep-edits className="no-print fixed bottom-6 left-1/2 z-40 flex max-w-[94vw] -translate-x-1/2 items-center gap-3 rounded-2xl border border-amber-300 bg-white px-4 py-2.5 shadow-2xl">
+        <div data-keep-edits className="no-print fixed bottom-20 left-1/2 z-40 lg:bottom-6 flex max-w-[94vw] -translate-x-1/2 items-center gap-3 rounded-2xl border border-amber-300 bg-white px-4 py-2.5 shadow-2xl">
           <span className="text-sm font-semibold text-amber-800">{dirtyCount} perubahan belum disimpan</span>
           <button className="btn-ghost !px-3 !py-1.5 !text-xs" disabled={saving}
             onClick={() => { if (window.confirm('Buang semua perubahan yang belum disimpan?')) setEdits({}); }}>Batalkan</button>

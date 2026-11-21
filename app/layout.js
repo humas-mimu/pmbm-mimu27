@@ -1,6 +1,7 @@
 import './globals.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
 import { getSettings } from '@/lib/settings';
 import { getUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,11 @@ export default async function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
+      <body className="flex min-h-screen flex-col bg-slate-50 pb-16 lg:pb-0 font-sans text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
         <SiteHeader settings={settings} user={staff} />
         <main className="w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">{children}</main>
         <SiteFooter settings={settings} />
+        <WhatsAppFloat settings={settings} />
       </body>
     </html>
   );

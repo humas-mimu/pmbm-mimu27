@@ -7,7 +7,7 @@ import {
   MessageCircle, RotateCcw, School, Send, ShieldAlert, Type, UserCheck, UserCog,
 } from 'lucide-react';
 import { AGAMA, DIGIT_FIELDS, TEXT_FIELDS, cleanRegistrant } from '@/lib/validate';
-import { academicYear, fmtDateTime, waLink } from '@/lib/utils';
+import { academicYear, fmtDateTime, waPanitia } from '@/lib/utils';
 import { Field, Modal } from './ui';
 import AddressFields from './AddressFields';
 import Combo from './Combo';
@@ -350,7 +350,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
               ))}
             </dl>
             <a className="pbtn-wa mt-4 w-full" target="_blank" rel="noopener noreferrer"
-              href={waLink(settings.committee_whatsapp, `Halo Panitia PMBM, saya ingin konfirmasi kendala NIK terdaftar (${form.nik_siswa}).`)}>
+              href={waPanitia(settings.committee_whatsapp)}>
               <MessageCircle size={16} />Hubungi Panitia via WhatsApp
             </a>
           </>

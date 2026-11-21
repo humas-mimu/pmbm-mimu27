@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/supabase';
 import { requireUser } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
+import { normSosmed } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
@@ -35,6 +36,15 @@ export async function PUT(req) {
   else if (phone.startsWith('8')) phone = `62${phone}`;
   if (!/^62\d{8,13}$/.test(phone)) return NextResponse.json({ error: 'Nomor WhatsApp panitia tidak valid. Contoh: 6285163088163 atau 085163088163.' }, { status: 422 });
 
+  // Sosmed footer (opsional; kosong = ikon disembunyikan). Hanya diproses bila dikirim.
+  const sosmed = {};
+  for (const [k, p] of [['instagram_url', 'instagram'], ['tiktok_url', 'tiktok']]) {
+    if (!(k in b)) continue;
+    const r = normSosmed(p, b[k]);
+    if (r.error) return NextResponse.json({ error: r.error }, { status: 422 });
+    sosmed[k] = r.url;
+  }
+
   let logo = b.logo_url ?? null;
   if (logo) {
     if (!/^data:image\/(png|jpeg|svg\+xml|webp);base64,/.test(logo)) return NextResponse.json({ error: 'Format logo tidak valid. Gunakan PNG, JPG, WEBP, atau SVG.' }, { status: 422 });
@@ -49,12 +59,13 @@ export async function PUT(req) {
 
   const { data: saved, error } = await db().from('school_settings').upsert({
     id: 1, school_name, program_name, school_address: s(b.school_address),
-    whatsapp_group_link: wa || null, committee_whatsapp: phone, logo_url: logo, favicon_url: fav,
+    whatsapp_group_link: wa || null, committee_whatsapp: phone, logo_url: logo, favicon_url: fav, ...sosmed,
     updated_at: new Date().toISOString(),
   }).select().single();
   if (error) {
     console.error('PUT /api/settings:', error);
-    const hint = /favicon_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/001_nik_wali_favicon.sql di Supabase SQL Editor.' : '';
+    const hint = /favicon_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/001_nik_wali_favicon.sql di Supabase SQL Editor.'
+      : /instagram_url|tiktok_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/004_footer_sosmed.sql di Supabase SQL Editor.' : '';
     return NextResponse.json({ error: `Gagal menyimpan ke database: ${error.message}${hint}` }, { status: 500 });
   }
   return NextResponse.json({ ok: true, settings: saved });

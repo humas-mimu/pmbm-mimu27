@@ -13,6 +13,8 @@ create table if not exists school_settings (
   favicon_url text,                    -- data URL favicon (opsional; kosong = pakai public/favicon.svg)
   social_links jsonb not null default '[]'::jsonb,  -- daftar konten Instagram/TikTok/YouTube di Beranda
   uniform_sizes jsonb not null default '["5","6","7","7+","8","S","S+","M","L","XL","XXL"]'::jsonb,  -- jenis ukuran seragam (diubah Admin)
+  instagram_url text default 'https://www.instagram.com/mimu.buntaran',   -- footer "Kunjungi dan Follow" (kosong = disembunyikan)
+  tiktok_url text default 'https://www.tiktok.com/@mimu.buntaran',
   whatsapp_group_link text,
   committee_whatsapp text not null default '6285163088163',
   updated_at timestamptz not null default now()

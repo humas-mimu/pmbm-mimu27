@@ -6,7 +6,7 @@ export default function WhatsAppFloat({ settings }) {
   return (
     <a href={waPanitia(settings.committee_whatsapp)} target="_blank" rel="noopener noreferrer"
       aria-label="Hubungi Panitia via WhatsApp" title="Hubungi Panitia via WhatsApp"
-      className="no-print group fixed bottom-[4.75rem] right-4 z-40 flex items-center lg:bottom-6 lg:right-6">
+      className="no-print group fixed bottom-[4.75rem] right-4 z-40 flex items-center lg:bottom-[5.75rem] lg:right-10">
       <span className="pointer-events-none mr-2 hidden translate-x-2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition group-hover:translate-x-0 group-hover:opacity-100 lg:block">Hubungi Panitia</span>
       <span className="grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-xl shadow-emerald-900/25 ring-4 ring-white/80 transition group-hover:scale-110">
         <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true">

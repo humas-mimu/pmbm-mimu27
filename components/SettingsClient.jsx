@@ -57,7 +57,7 @@ function fileToFavicon(file) {
 }
 
 export default function SettingsClient({ initial }) {
-  const [f, setF] = useState({ ...initial, whatsapp_group_link: initial.whatsapp_group_link || '', logo_url: initial.logo_url || null, favicon_url: initial.favicon_url || null });
+  const [f, setF] = useState({ ...initial, instagram_url: initial.instagram_url || '', tiktok_url: initial.tiktok_url || '', whatsapp_group_link: initial.whatsapp_group_link || '', logo_url: initial.logo_url || null, favicon_url: initial.favicon_url || null });
   const router = useRouter();
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -84,7 +84,7 @@ export default function SettingsClient({ initial }) {
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         const d = j.settings || {};
-        setF((p) => ({ ...p, ...d, whatsapp_group_link: d.whatsapp_group_link || '', logo_url: d.logo_url || null, favicon_url: d.favicon_url || null }));
+        setF((p) => ({ ...p, ...d, instagram_url: d.instagram_url || '', tiktok_url: d.tiktok_url || '', whatsapp_group_link: d.whatsapp_group_link || '', logo_url: d.logo_url || null, favicon_url: d.favicon_url || null }));
         show({ ok: true, t: `Pengaturan berhasil disimpan ke database.${d.whatsapp_group_link ? ` Link grup: ${d.whatsapp_group_link}` : ' (Link grup WhatsApp kosong)'}` });
         router.refresh();
       } else show({ ok: false, t: `Gagal menyimpan (kode ${r.status}): ${j.error || 'terjadi kesalahan.'}` });
@@ -124,6 +124,8 @@ export default function SettingsClient({ initial }) {
       <Field label="Nama Program Pendaftaran" required><input className="pinput" value={f.program_name} onChange={(e) => set('program_name', e.target.value)} required /></Field>
       <Field label="Link Grup WhatsApp Calon Murid Baru" hint="Contoh: https://chat.whatsapp.com/XXXXXXXX"><input className="pinput" value={f.whatsapp_group_link} onChange={(e) => set('whatsapp_group_link', e.target.value)} /></Field>
       <Field label="Nomor WhatsApp Panitia" required hint="Diawali 62, tanpa spasi/tanda +. Contoh: 6285163088163"><input className="pinput" value={f.committee_whatsapp} onChange={(e) => set('committee_whatsapp', e.target.value)} required /></Field>
+      <Field label="Instagram (footer: Kunjungi dan Follow)" hint="Isi @username atau link profil. Kosongkan untuk menyembunyikan ikon. Contoh: @mimu.buntaran"><input className="pinput" value={f.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} placeholder="https://www.instagram.com/mimu.buntaran" /></Field>
+      <Field label="TikTok (footer: Kunjungi dan Follow)" hint="Isi @username atau link profil. Kosongkan untuk menyembunyikan ikon. Contoh: @mimu.buntaran"><input className="pinput" value={f.tiktok_url} onChange={(e) => set('tiktok_url', e.target.value)} placeholder="https://www.tiktok.com/@mimu.buntaran" /></Field>
       {msg && <p ref={msgRef} className={`break-all rounded-xl px-4 py-3 text-sm font-semibold lg:col-span-2 ${msg.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-700'}`}>{msg.t}</p>}
       <button className="pbtn-primary lg:col-span-2 lg:w-fit" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}Simpan Pengaturan</button>
     </form>

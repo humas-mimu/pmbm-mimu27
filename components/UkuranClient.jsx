@@ -182,6 +182,19 @@ export default function UkuranClient({ role }) {
       (!k || r.nama_siswa.includes(k) || r.nik_siswa.includes(k) || r.registration_id.includes(k)));
   }, [rows, q, filter]);
 
+  // Jumlah siswa per ukuran untuk tiap jenis seragam (dari data TERSIMPAN). Ukuran lama yang sudah dihapus dari daftar tetap dihitung.
+  const counts = useMemo(() => {
+    const all = rows || [];
+    const cols = [...sizes];
+    const rowsOut = [['Atasan (Baju)', 'ukuran_baju'], ['Bawahan (Celana/Rok)', 'ukuran_bawahan'], ['Kaos Olahraga', 'ukuran_olahraga']].map(([label, f]) => {
+      const by = {};
+      let total = 0;
+      all.forEach((r) => { const v = r[f]; if (v) { by[v] = (by[v] || 0) + 1; total += 1; if (!cols.includes(v)) cols.push(v); } });
+      return { label, by, total };
+    });
+    return { cols, rows: rowsOut };
+  }, [rows, sizes]);
+
   const usage = useMemo(() => {
     const m = {};
     (rows || []).forEach((r) => { [r.ukuran_baju, r.ukuran_bawahan, r.ukuran_olahraga].forEach((v) => { if (v) m[v] = (m[v] || 0) + 1; }); });
@@ -205,10 +218,40 @@ export default function UkuranClient({ role }) {
         <p className="text-sm text-slate-600">Pilih ukuran langsung di tabel, lalu tekan <b>Simpan</b> sekali untuk menyimpan semua baris yang diubah. Data otomatis tampil di Bukti Pendaftaran dan Cek Pendaftaran.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:max-w-xl">
-        {[['Pendaftar Aktif', stats.total, 'text-emerald-700'], ['Sudah Diisi', stats.filled, 'text-blue-700'], ['Belum Diisi', stats.empty, 'text-amber-700']].map(([l, v, c]) => (
-          <div key={l} className="card !p-4"><div className="text-xs font-semibold text-slate-500">{l}</div><div className={`font-heading text-3xl font-extrabold ${c}`}>{v}</div></div>
-        ))}
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-stretch">
+        <div className="grid grid-cols-3 gap-3 xl:w-[34rem] xl:shrink-0">
+          {[['Pendaftar Aktif', stats.total, 'text-emerald-700'], ['Sudah Diisi', stats.filled, 'text-blue-700'], ['Belum Diisi', stats.empty, 'text-amber-700']].map(([l, v, c]) => (
+            <div key={l} className="card !p-4"><div className="text-xs font-semibold text-slate-500">{l}</div><div className={`font-heading text-3xl font-extrabold ${c}`}>{v}</div></div>
+          ))}
+        </div>
+
+        <div className="card min-w-0 flex-1 !p-3">
+          <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+            <h2 className="text-xs font-extrabold uppercase tracking-wide text-slate-600">Jumlah per Ukuran</h2>
+            <span className="text-[11px] text-slate-400">data tersimpan</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-max border-collapse text-center text-sm">
+              <thead>
+                <tr className="text-[11px] font-bold uppercase text-slate-500">
+                  <th className="px-2 py-1 text-left"></th>
+                  {counts.cols.map((c) => <th key={c} className="px-2 py-1">{c}{sizes.includes(c) ? '' : '*'}</th>)}
+                  <th className="px-2 py-1 text-emerald-700">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {counts.rows.map((r) => (
+                  <tr key={r.label}>
+                    <td className="whitespace-nowrap px-2 py-1 text-left text-xs font-semibold text-slate-600">{r.label}</td>
+                    {counts.cols.map((c) => <td key={c} className={`px-2 py-1 tabular-nums ${r.by[c] ? 'font-extrabold text-slate-900' : 'text-slate-300'}`}>{r.by[c] || 0}</td>)}
+                    <td className="px-2 py-1 font-extrabold tabular-nums text-emerald-700">{r.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {counts.cols.some((c) => !sizes.includes(c)) && <p className="mt-1 px-1 text-[10px] text-slate-400">* ukuran tidak aktif (sudah dihapus dari Jenis Ukuran, data siswa tetap tersimpan)</p>}
+        </div>
       </div>
 
       <div className="card space-y-3 !p-4">

@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { academicYear, fmtDateLong, fmtDateLongTitle, fmtDateTime, todayYmd } from '@/lib/utils';
 import { Logo } from './ui';
+import { hasUniform } from '@/lib/uniform';
 
 const cell = 'border border-slate-400 px-2.5 py-1.5 align-top print:px-2 print:py-1';
 const head = 'border border-slate-400 bg-slate-100 px-2.5 py-1.5 text-left font-heading font-bold uppercase print:py-1';
@@ -88,15 +89,18 @@ export default async function ProofSheet({ registrant: r, settings: s, petugasNa
         </div>
       </div>
 
-      {/* Ukuran seragam: diisi tangan oleh petugas koperasi setelah pendaftar menerima bukti ini */}
+      {/* Ukuran seragam: otomatis terisi dari menu Ukuran Seragam; bila belum diisi, dikosongkan untuk ditulis tangan oleh petugas koperasi */}
       <div className="w-[74mm] rounded-2xl bg-[#dbe4f4] p-3 text-[#3b4fc2]">
         <div className="font-heading text-base font-extrabold uppercase tracking-wide">Ukuran Seragam</div>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          {['ATASAN', 'BAWAHAN', 'OLAHRAGA'].map((k) => (
-            <div key={k} className="h-[17mm] rounded-lg border border-[#6f86d4] pt-1 text-center text-[10px] font-extrabold tracking-wide">{k}</div>
+          {[['ATASAN', r.ukuran_baju], ['BAWAHAN', r.ukuran_bawahan], ['OLAHRAGA', r.ukuran_olahraga]].map(([k, v]) => (
+            <div key={k} className="flex h-[17mm] flex-col rounded-lg border border-[#6f86d4] pt-1 text-center">
+              <div className="text-[10px] font-extrabold tracking-wide">{k}</div>
+              <div className="flex flex-1 items-center justify-center px-1 font-heading text-lg font-extrabold leading-tight text-slate-900 [&>span]:break-words">{v ? <span>{v}</span> : null}</div>
+            </div>
           ))}
         </div>
-        <div className="mt-1.5 text-[9px] font-medium">*diisi oleh petugas koperasi madrasah</div>
+        {!hasUniform(r) && <div className="mt-1.5 text-[9px] font-medium">*diisi oleh petugas koperasi madrasah</div>}
       </div>
 
       {/* Dasar halaman: keterangan dokumen (kiri bawah) + QR Grup WhatsApp (pojok kanan bawah) */}

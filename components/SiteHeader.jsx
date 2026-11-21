@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ClipboardList, FileText, Home, LayoutDashboard, LogIn, LogOut, Menu, Search, Settings, Share2, Users, X } from 'lucide-react';
+import { ChevronDown, ClipboardList, FileText, Home, LayoutDashboard, LogIn, LogOut, Menu, Search, Settings, Share2, Shirt, Users, X } from 'lucide-react';
 import { Logo } from './ui';
 
 export default function SiteHeader({ settings, user }) {
@@ -12,11 +12,13 @@ export default function SiteHeader({ settings, user }) {
   const [acc, setAcc] = useState(false);       // dropdown akun
   const accRef = useRef(null);
   const isAdmin = user?.role === 'ADMIN';
+  const canUniform = user?.role === 'ADMIN' || user?.role === 'GURU';   // menu Ukuran Seragam: hanya Admin & Guru
 
   const links = [
     { href: '/', label: 'Beranda', icon: Home },
     { href: '/daftar', label: 'Formulir Pendaftaran', icon: FileText },
     { href: '/cek-pendaftaran', label: 'Cek Pendaftaran', icon: Search },
+    ...(canUniform ? [{ href: '/dashboard/ukuran-seragam', label: 'Ukuran Seragam', icon: Shirt }] : []),
   ];
   const accountItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

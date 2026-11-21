@@ -5,6 +5,7 @@ import { Badge } from './ui';
 import LoadingOverlay from './LoadingOverlay';
 import { ScaledTicket } from './Ticket';
 import { downloadTicket, ticketFilename } from '@/lib/ticket';
+import { hasUniform } from '@/lib/uniform';
 import { alamatLengkap, fmtDateLong, fmtDateTime, waliLabel } from '@/lib/utils';
 
 export default function CekClient({ settings }) {
@@ -80,6 +81,16 @@ export default function CekClient({ settings }) {
                 ))}
               </div>
             </div>
+            {hasUniform(r) && (
+              <div>
+                <h2 className="mb-2 text-sm font-extrabold">Ukuran Seragam</h2>
+                <dl className="divide-y divide-slate-100 rounded-xl border border-slate-200 text-sm">
+                  {[['Atasan (Baju)', r.ukuran_baju], ['Bawahan (Celana/Rok)', r.ukuran_bawahan], ['Kaos Olahraga', r.ukuran_olahraga], ['Keterangan', r.ukuran_lain]].filter(([, v]) => v).map(([k, v]) => (
+                    <div key={k} className="grid grid-cols-3 gap-2 px-3 py-2"><dt className="font-semibold text-slate-500">{k}</dt><dd className="col-span-2 break-words font-bold uppercase">{v}</dd></div>
+                  ))}
+                </dl>
+              </div>
+            )}
             {settings.whatsapp_group_link && (
               <a href={settings.whatsapp_group_link} target="_blank" rel="noopener noreferrer" className="pbtn-wa w-full"><MessageCircle size={16} />Join Grup WhatsApp</a>
             )}

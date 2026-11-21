@@ -9,7 +9,7 @@ Website Penerimaan Murid Baru Madrasah (Next.js + Supabase). Bisa di-hosting **g
 
 > **Sudah pernah menjalankan `schema.sql` versi lama?** Jalankan sekali, berurutan, di Supabase SQL Editor:
 > `supabase/migrations/001_nik_wali_favicon.sql` (kolom NIK Wali & Favicon) dan `supabase/migrations/002_social_links.sql` (konten sosmed Beranda).
-> Instalasi baru cukup `schema.sql`.
+> Lalu jalankan juga `supabase/migrations/003_ukuran_seragam.sql` (fitur Ukuran Seragam). Instalasi baru cukup `schema.sql`.
 
 ## A. Siapkan database (Supabase, gratis)
 1. Daftar di https://supabase.com → **New project** (catat password database, pilih region Singapore).
@@ -76,6 +76,12 @@ Judul tab mengikuti halaman yang dibuka, formatnya `<Nama Menu> — PMBM` (mis. 
 Kontrol geser muncul **hanya saat kursor berada di zonanya**: kursor di bagian **atas** tabel → scrollbar atas; di bagian **bawah** layar → scrollbar bawah
 (menempel di dasar layar sehingga selalu terjangkau); di tepi **kanan** → tombol ▶ saja; di tepi **kiri** → tombol ◀ saja. Bisa juga lewat trackpad,
 Shift + roda mouse, atau tombol panah keyboard (klik tabel dulu). Di layar sentuh semua kontrol selalu tampil.
+
+## Ukuran Seragam
+Menu **Ukuran Seragam** (di kanan *Cek Pendaftaran*, hanya tampil untuk **Admin & Guru**). Pilih ukuran Baju, Celana/Rok & Kaos Olahraga langsung di kolom tabel, isi Lain-lain bila perlu, lalu tekan **Simpan** — semua baris yang diedit tersimpan sekaligus (satu transaksi).
+Klik di luar kolom input saat ada perubahan memunculkan panel *Simpan / Buang / Lanjut Mengedit*. Ada pencarian dan Export Excel/CSV.
+Data otomatis tampil di tabel *Ukuran Seragam* pada **Bukti Pendaftaran** dan di hasil **Cek Pendaftaran** (hanya bila sudah diisi).
+**Admin** mengubah daftar jenis ukuran lewat tombol **Jenis Ukuran** (tambah/hapus/urutan), tanpa mengubah kode.
 
 ## Akun Guru
 Admin dapat mengubah Nama, Username, dan Role (tombol **Edit**), mereset password, serta menonaktifkan akun. Role akun sendiri tidak dapat diturunkan.

@@ -12,6 +12,7 @@ create table if not exists school_settings (
   logo_url text,                       -- data URL gambar (disimpan langsung, tanpa storage terpisah)
   favicon_url text,                    -- data URL favicon (opsional; kosong = pakai public/favicon.svg)
   social_links jsonb not null default '[]'::jsonb,  -- daftar konten Instagram/TikTok/YouTube di Beranda
+  uniform_sizes jsonb not null default '["5","6","7","7+","8","S","S+","M","L","XL","XXL"]'::jsonb,  -- jenis ukuran seragam (diubah Admin)
   whatsapp_group_link text,
   committee_whatsapp text not null default '6285163088163',
   updated_at timestamptz not null default now()
@@ -63,6 +64,11 @@ create table if not exists registrants (
   is_ktp_ortu boolean not null default false,
   is_kk boolean not null default false,
 
+  ukuran_baju text,                      -- ukuran seragam: Baju (atasan)
+  ukuran_bawahan text,                   -- ukuran seragam: Celana/Rok
+  ukuran_olahraga text,                  -- ukuran seragam: Kaos Olahraga
+  ukuran_lain text,                      -- keterangan / lain-lain
+
   status text not null default 'ACTIVE' check (status in ('ACTIVE','CANCELLED')),
   cancel_reason text,
   input_by_user_id uuid references users(id),
@@ -86,6 +92,24 @@ begin
 end $$;
 revoke all on function next_seq(text) from public, anon, authenticated;
 
+-- Simpan ukuran seragam banyak siswa sekaligus (satu transaksi)
+create or replace function save_uniform_sizes(p_items jsonb) returns int
+language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  update registrants r
+     set ukuran_baju      = nullif(btrim(i.ukuran_baju), ''),
+         ukuran_bawahan   = nullif(btrim(i.ukuran_bawahan), ''),
+         ukuran_olahraga  = nullif(btrim(i.ukuran_olahraga), ''),
+         ukuran_lain      = nullif(btrim(i.ukuran_lain), ''),
+         updated_at     = now()
+    from jsonb_to_recordset(p_items) as i(id uuid, ukuran_baju text, ukuran_bawahan text, ukuran_olahraga text, ukuran_lain text)
+   where r.id = i.id;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function save_uniform_sizes(jsonb) from public, anon, authenticated;
+
 -- KEAMANAN: aktifkan RLS tanpa policy => kunci publik (anon) tidak bisa membaca/menulis apa pun.
 -- Seluruh akses data hanya lewat server Next.js memakai service role key.
 alter table school_settings enable row level security;
@@ -99,6 +123,7 @@ grant usage on schema public to service_role;
 grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 grant execute on function next_seq(text) to service_role;
+grant execute on function save_uniform_sizes(jsonb) to service_role;
 revoke all on all tables in schema public from anon, authenticated;
 
 -- Akun Admin awal. SEGERA ganti password setelah login pertama!

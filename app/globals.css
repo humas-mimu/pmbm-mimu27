@@ -72,8 +72,14 @@
 
 @media print {
   html, body { height: auto !important; min-height: 0 !important; margin: 0 !important; }
-  body { display: block !important; }
-  .print-sheet { break-inside: avoid; page-break-inside: avoid; }
+  /* pb-16 pada <body> (ruang menu bawah HP) ikut tercetak pada lebar A4 -> dulu mendorong footer ke halaman 2 */
+  body { display: block !important; padding: 0 !important; }
+  /* Bukti pendaftaran = tepat 1 halaman A4 (297mm; disisakan 1mm agar tidak ada halaman kosong). */
+  .print-sheet {
+    box-sizing: border-box; height: 296mm; max-height: 296mm; overflow: hidden;
+    padding: 12mm 16mm !important;
+    break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid;
+  }
 }
 
 /* Warna latar (kotak ID, Ukuran Seragam, header tabel) tetap tercetak walau "Background graphics" browser mati */

@@ -23,7 +23,7 @@ export default async function ProofSheet({ registrant: r, settings: s, petugasNa
   }
 
   return (
-    <div className="print-sheet flex flex-col gap-5 bg-white p-8 text-slate-900 sm:p-10 print:min-h-[290mm] print:gap-3 print:px-[16mm] print:py-[12mm]">
+    <div className="print-sheet flex flex-col gap-5 bg-white p-8 text-slate-900 sm:p-10 print:gap-3">
       {/* Kop madrasah + kotak ID Pendaftaran (warna pembeda program) */}
       <div className="flex items-center gap-4 border-b-4 border-double border-slate-900 pb-3">
         <div className="shrink-0"><Logo settings={s} size={72} /></div>
@@ -103,15 +103,15 @@ export default async function ProofSheet({ registrant: r, settings: s, petugasNa
         {!hasUniform(r) && <div className="mt-1.5 text-[9px] font-medium">*diisi oleh petugas koperasi madrasah</div>}
       </div>
 
-      {/* Dasar halaman: keterangan dokumen (kiri bawah) + QR Grup WhatsApp (pojok kanan bawah) */}
-      <div className="mt-auto flex items-end justify-between gap-6 border-t border-dashed border-slate-300 pt-3">
-        <p className="max-w-[60%] text-left text-[10px] leading-snug text-slate-500">
+      {/* Dasar halaman (ringkas): keterangan dokumen (kiri) + QR Grup WhatsApp kecil (kanan). Tinggi dijaga agar tetap 1 halaman A4 */}
+      <div className="mt-auto flex items-center justify-between gap-4 border-t border-dashed border-slate-300 pt-2">
+        <p className="max-w-[68%] text-left text-[10px] leading-snug text-slate-500">
           Dokumen ini dicetak dari Sistem PMBM {s.school_name}. Simpan bukti ini dan bawa saat konfirmasi di madrasah.
         </p>
         {qr && (
-          <div className="flex shrink-0 flex-col items-center gap-1">
-            <div className="h-24 w-24 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: qr }} />
-            <div className="text-center text-[10px] font-bold leading-tight">Scan untuk Join<br />Grup WhatsApp</div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="text-right text-[9px] font-bold leading-tight">Scan untuk Join<br />Grup WhatsApp</div>
+            <div className="h-[22mm] w-[22mm] shrink-0 bg-white p-[1mm] [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: qr }} />
           </div>
         )}
       </div>

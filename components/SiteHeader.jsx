@@ -35,6 +35,9 @@ export default function SiteHeader({ settings, user }) {
   const inDash = path.startsWith('/dashboard');
 
   useEffect(() => { setAcc(false); setOpen(false); }, [path]);
+  // Layout tidak dirender ulang saat pindah halaman, jadi `user` bisa basi: sesi habis -> diarahkan ke /login,
+  // tetapi header masih menampilkan akun lama. Di /login berarti sesi sudah tidak berlaku -> ambil ulang dari server.
+  useEffect(() => { if (user && path === '/login') router.refresh(); }, [user, path, router]);
   useEffect(() => {
     const onDown = (e) => { if (accRef.current && !accRef.current.contains(e.target)) setAcc(false); };
     const onKey = (e) => { if (e.key === 'Escape') setAcc(false); };

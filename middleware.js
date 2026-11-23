@@ -14,7 +14,9 @@ export async function middleware(req) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    if (token) res.cookies.delete('pmbm_session');   // buang cookie sesi yang sudah kedaluwarsa/tidak valid
+    return res;
   }
   return NextResponse.next();
 }

@@ -4,6 +4,8 @@ import { getUser } from '@/lib/auth';
 import { cleanRegistrant } from '@/lib/validate';
 import { currentYear2, publicRegistrant } from '@/lib/utils';
 import { limited } from '@/lib/ratelimit';
+import { getSettings } from '@/lib/settings';
+import { getRegistrationStatus } from '@/lib/registration';
 export const dynamic = 'force-dynamic';
 
 const DUP_COLS = 'nama_siswa,registration_id,program_kelas,created_at';
@@ -29,6 +31,20 @@ export async function POST(req) {
       { error: 'Konfirmasi jalur Offline diperlukan. Muat ulang halaman formulir lalu konfirmasi, atau logout bila ini pendaftar online.' },
       { status: 403 },
     );
+  }
+
+  // Jadwal gelombang: pendaftaran ONLINE ditolak server bila di luar waktu (blur di browser saja tidak cukup).
+  // Petugas yang login (jalur OFFLINE) tidak dibatasi jadwal.
+  if (!user) {
+    const st = getRegistrationStatus(await getSettings(), Date.now());
+    if (st.state !== 'open') {
+      return NextResponse.json({
+        error: st.state === 'upcoming'
+          ? `Pendaftaran ${st.wave.name} belum dibuka. Silakan muat ulang halaman untuk melihat jadwalnya.`
+          : 'Pendaftaran telah berakhir. Silakan hubungi admin.',
+        code: 'REGISTRATION_CLOSED',
+      }, { status: 403 });
+    }
   }
 
   const client = db();

@@ -3,6 +3,7 @@ import { db } from '@/lib/supabase';
 import { requireUser } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
 import { normSosmed } from '@/lib/utils';
+import { validateWavesInput } from '@/lib/registration';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
@@ -45,6 +46,18 @@ export async function PUT(req) {
     sosmed[k] = r.url;
   }
 
+  // Jadwal gelombang pendaftaran (hanya diproses bila dikirim, agar tidak menimpa data lama)
+  const jadwal = {};
+  if ('registration_waves' in b) {
+    const r = validateWavesInput(b.registration_waves);
+    if (r.error) return NextResponse.json({ error: r.error }, { status: 422 });
+    jadwal.registration_waves = r.waves;
+    jadwal.registration_schedule_enabled = b.registration_schedule_enabled === true;
+    if (jadwal.registration_schedule_enabled && !r.waves.length) {
+      return NextResponse.json({ error: 'Jadwal diaktifkan tetapi belum ada gelombang. Tambahkan minimal satu gelombang atau nonaktifkan jadwal.' }, { status: 422 });
+    }
+  }
+
   let logo = b.logo_url ?? null;
   if (logo) {
     if (!/^data:image\/(png|jpeg|svg\+xml|webp);base64,/.test(logo)) return NextResponse.json({ error: 'Format logo tidak valid. Gunakan PNG, JPG, WEBP, atau SVG.' }, { status: 422 });
@@ -59,12 +72,13 @@ export async function PUT(req) {
 
   const { data: saved, error } = await db().from('school_settings').upsert({
     id: 1, school_name, program_name, school_address: s(b.school_address),
-    whatsapp_group_link: wa || null, committee_whatsapp: phone, logo_url: logo, favicon_url: fav, ...sosmed,
+    whatsapp_group_link: wa || null, committee_whatsapp: phone, logo_url: logo, favicon_url: fav, ...sosmed, ...jadwal,
     updated_at: new Date().toISOString(),
   }).select().single();
   if (error) {
     console.error('PUT /api/settings:', error);
     const hint = /favicon_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/001_nik_wali_favicon.sql di Supabase SQL Editor.'
+      : /registration_waves|registration_schedule_enabled/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/005_jadwal_gelombang.sql di Supabase SQL Editor.'
       : /instagram_url|tiktok_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/004_footer_sosmed.sql di Supabase SQL Editor.' : '';
     return NextResponse.json({ error: `Gagal menyimpan ke database: ${error.message}${hint}` }, { status: 500 });
   }

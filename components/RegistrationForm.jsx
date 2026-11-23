@@ -13,6 +13,7 @@ import AddressFields from './AddressFields';
 import Combo from './Combo';
 import LoadingOverlay from './LoadingOverlay';
 import SuccessPanel from './SuccessPanel';
+import { ClosedPanel, ScheduleNotice, useRegistrationGate } from './RegistrationGate';
 
 const EMPTY = {
   program_kelas: '', nama_siswa: '', nik_siswa: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '', agama: 'ISLAM',
@@ -46,9 +47,12 @@ function Pill({ active, onClick, children }) {
   );
 }
 
-export default function RegistrationForm({ staff = null, settings, mode = 'create', initial = null, registrantId = null }) {
+export default function RegistrationForm({ staff = null, settings, mode = 'create', initial = null, registrantId = null, serverNow = 0 }) {
   const router = useRouter();
   const isEdit = mode === 'edit';
+  // Jadwal gelombang: hanya mengunci formulir ONLINE publik. Petugas (offline) & mode edit tidak terkunci.
+  const gate = useRegistrationGate(settings, serverNow);
+  const locked = !isEdit && !staff && gate.status.state !== 'open';
   const start = initial ? { ...EMPTY, ...initial, nama_wali_lain: initial.nama_wali_lain || '', nik_wali: initial.nik_wali || '' } : EMPTY;
   const [form, setForm] = useState(start);
   const [errors, setErrors] = useState({});
@@ -177,7 +181,11 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
   const modeBadge = isEdit ? initial?.registration_id : staff ? `OFMB-${yy}…` : `ONMB-${yy}…`;
 
   return (
-    <form onSubmit={submit} className="w-full" noValidate>
+    <div className="w-full">
+    {!isEdit && <ScheduleNotice status={gate.status} now={gate.now} staff={!!staff} />}
+    <div className="relative">
+    <form onSubmit={submit} className={`w-full transition ${locked ? 'pointer-events-none select-none blur-[6px]' : ''}`} noValidate
+      inert={locked ? '' : undefined} aria-hidden={locked || undefined}>
       <div className="grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:gap-8">
         {/* ================= KOLOM KIRI ================= */}
         <div className="w-full space-y-6">
@@ -357,5 +365,8 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
         )}
       </Modal>
     </form>
+    {locked && <ClosedPanel status={gate.status} now={gate.now} settings={settings} />}
+    </div>
+    </div>
   );
 }

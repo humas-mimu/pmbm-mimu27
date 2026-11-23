@@ -1,7 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { CalendarClock, Loader2, Plus, Save, Trash2, Upload } from 'lucide-react';
+import { MAX_WAVES, isoToWibInput, normalizeWaves, wibInputToIso } from '@/lib/registration';
 import { Field, Logo } from './ui';
 import LoadingOverlay from './LoadingOverlay';
 
@@ -59,6 +60,12 @@ function fileToFavicon(file) {
 export default function SettingsClient({ initial }) {
   const [f, setF] = useState({ ...initial, instagram_url: initial.instagram_url || '', tiktok_url: initial.tiktok_url || '', whatsapp_group_link: initial.whatsapp_group_link || '', logo_url: initial.logo_url || null, favicon_url: initial.favicon_url || null });
   const router = useRouter();
+  // Jadwal gelombang: di form dipegang sebagai teks WIB (datetime-local), dikonversi ke ISO UTC saat simpan
+  const toRows = (list) => normalizeWaves(list).map((w) => ({ name: w.name, open: isoToWibInput(w.open_at), close: isoToWibInput(w.close_at) }));
+  const [schedOn, setSchedOn] = useState(!!initial.registration_schedule_enabled);
+  const [waves, setWaves] = useState(() => toRows(initial.registration_waves));
+  const setWave = (i, k, v) => setWaves((p) => p.map((w, j) => (j === i ? { ...w, [k]: v } : w)));
+  const addWave = () => setWaves((p) => [...p, { name: `Gelombang ${p.length + 1}`, open: '', close: '' }]);
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
   const msgRef = useRef(null);
@@ -78,12 +85,15 @@ export default function SettingsClient({ initial }) {
     catch (er) { setMsg({ ok: false, t: er.message }); }
   }
   async function save(e) {
-    e.preventDefault(); setBusy(true); setMsg(null);
+    e.preventDefault(); setMsg(null);
+    const payloadWaves = waves.map((w) => ({ name: w.name, open_at: wibInputToIso(w.open), close_at: wibInputToIso(w.close) }));
+    setBusy(true);
     try {
-      const r = await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) });
+      const r = await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, registration_schedule_enabled: schedOn, registration_waves: payloadWaves }) });
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         const d = j.settings || {};
+        setSchedOn(!!d.registration_schedule_enabled); setWaves(toRows(d.registration_waves));
         setF((p) => ({ ...p, ...d, instagram_url: d.instagram_url || '', tiktok_url: d.tiktok_url || '', whatsapp_group_link: d.whatsapp_group_link || '', logo_url: d.logo_url || null, favicon_url: d.favicon_url || null }));
         show({ ok: true, t: `Pengaturan berhasil disimpan ke database.${d.whatsapp_group_link ? ` Link grup: ${d.whatsapp_group_link}` : ' (Link grup WhatsApp kosong)'}` });
         router.refresh();
@@ -126,6 +136,31 @@ export default function SettingsClient({ initial }) {
       <Field label="Nomor WhatsApp Panitia" required hint="Diawali 62, tanpa spasi/tanda +. Contoh: 6285163088163"><input className="pinput" value={f.committee_whatsapp} onChange={(e) => set('committee_whatsapp', e.target.value)} required /></Field>
       <Field label="Instagram (footer: Kunjungi dan Follow)" hint="Isi @username atau link profil. Kosongkan untuk menyembunyikan ikon. Contoh: @mimu.buntaran"><input className="pinput" value={f.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} placeholder="https://www.instagram.com/mimu.buntaran" /></Field>
       <Field label="TikTok (footer: Kunjungi dan Follow)" hint="Isi @username atau link profil. Kosongkan untuk menyembunyikan ikon. Contoh: @mimu.buntaran"><input className="pinput" value={f.tiktok_url} onChange={(e) => set('tiktok_url', e.target.value)} placeholder="https://www.tiktok.com/@mimu.buntaran" /></Field>
+      <div className="space-y-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50/50 p-4 sm:p-5 lg:col-span-2">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white"><CalendarClock size={20} /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-lg font-extrabold">Jadwal Pendaftaran per Gelombang</h2>
+            <p className="text-xs text-slate-600">Di luar jadwal, formulir online di-blur dan diganti panel hitung mundur menuju gelombang berikutnya. Waktu memakai <b>WIB</b>. Petugas yang login tetap bisa menginput pendaftaran offline.</p>
+          </div>
+        </div>
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3">
+          <input type="checkbox" className="h-5 w-5 rounded accent-emerald-600" checked={schedOn} onChange={(e) => setSchedOn(e.target.checked)} />
+          <span className="text-sm font-bold text-slate-800">Aktifkan jadwal pendaftaran <span className="font-normal text-slate-500">(nonaktif = formulir selalu dibuka)</span></span>
+        </label>
+        {waves.length === 0 && <p className="rounded-xl bg-white px-4 py-3 text-sm text-slate-500">Belum ada gelombang. Klik “Tambah Gelombang”.</p>}
+        <div className="space-y-3">
+          {waves.map((w, i) => (
+            <div key={i} className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-12 sm:items-end">
+              <Field label="Nama Gelombang" className="sm:col-span-3"><input className="pinput" value={w.name} maxLength={60} onChange={(e) => setWave(i, 'name', e.target.value)} placeholder="Gelombang 1" /></Field>
+              <Field label="Pendaftaran Dibuka" className="sm:col-span-4"><input type="datetime-local" className="pinput" value={w.open} onChange={(e) => setWave(i, 'open', e.target.value)} /></Field>
+              <Field label="Pendaftaran Ditutup" className="sm:col-span-4"><input type="datetime-local" className="pinput" value={w.close} onChange={(e) => setWave(i, 'close', e.target.value)} /></Field>
+              <button type="button" onClick={() => setWaves((p) => p.filter((_, j) => j !== i))} aria-label={`Hapus ${w.name || 'gelombang'}`} className="grid h-12 place-items-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 sm:col-span-1"><Trash2 size={18} /></button>
+            </div>
+          ))}
+        </div>
+        {waves.length < MAX_WAVES && <button type="button" onClick={addWave} className="pbtn-soft !py-2.5"><Plus size={16} />Tambah Gelombang</button>}
+      </div>
       {msg && <p ref={msgRef} className={`break-all rounded-xl px-4 py-3 text-sm font-semibold lg:col-span-2 ${msg.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-700'}`}>{msg.t}</p>}
       <button className="pbtn-primary lg:col-span-2 lg:w-fit" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}Simpan Pengaturan</button>
     </form>

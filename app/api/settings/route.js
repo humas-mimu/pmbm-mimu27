@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/supabase';
 import { requireUser } from '@/lib/auth';
-import { getSettings } from '@/lib/settings';
+import { getSettings, SETTINGS_TAG } from '@/lib/settings';
 import { normSosmed } from '@/lib/utils';
 import { validateWavesInput } from '@/lib/registration';
 export const dynamic = 'force-dynamic';
@@ -82,5 +83,6 @@ export async function PUT(req) {
       : /instagram_url|tiktok_url/.test(error.message || '') ? ' → Jalankan dulu supabase/migrations/004_footer_sosmed.sql di Supabase SQL Editor.' : '';
     return NextResponse.json({ error: `Gagal menyimpan ke database: ${error.message}${hint}` }, { status: 500 });
   }
+  revalidateTag(SETTINGS_TAG);   // buang cache settings agar perubahan langsung tampil di seluruh situs
   return NextResponse.json({ ok: true, settings: saved });
 }

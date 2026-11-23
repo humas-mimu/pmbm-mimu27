@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/supabase';
 import { requireUser } from '@/lib/auth';
-import { getSettings } from '@/lib/settings';
+import { getSettingsFresh, SETTINGS_TAG } from '@/lib/settings';
 import { MAX_SOCIAL, parseSocialUrl, reduceSocial } from '@/lib/social';
 export const dynamic = 'force-dynamic';
 
 const err = (m, status) => NextResponse.json({ error: m }, { status });
 
 async function loadList() {
-  const s = await getSettings();
+  const s = await getSettingsFresh();   // langsung dari DB (baca-lalu-tulis tidak boleh memakai cache)
   return Array.isArray(s.social_links) ? s.social_links : [];
 }
 async function saveList(list) {
   const { error } = await db().from('school_settings').upsert({ id: 1, social_links: list, updated_at: new Date().toISOString() });
   if (error) console.error('social save:', error);
+  else revalidateTag(SETTINGS_TAG);
   return error;
 }
 // Link pendek TikTok (vm.tiktok.com / tiktok.com/t/…) -> ikuti pengalihan untuk mendapatkan link lengkap

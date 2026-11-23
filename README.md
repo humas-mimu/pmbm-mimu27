@@ -10,6 +10,8 @@ Website Penerimaan Murid Baru Madrasah (Next.js + Supabase). Bisa di-hosting **g
 > **Sudah pernah menjalankan `schema.sql` versi lama?** Jalankan sekali, berurutan, di Supabase SQL Editor:
 > `supabase/migrations/001_nik_wali_favicon.sql` (kolom NIK Wali & Favicon) dan `supabase/migrations/002_social_links.sql` (konten sosmed Beranda).
 > Lalu jalankan juga `supabase/migrations/003_ukuran_seragam.sql` (fitur Ukuran Seragam). Instalasi baru cukup `schema.sql`.
+> Migrasi lain, jalankan berurutan bila belum: `004_footer_sosmed.sql` (tautan Instagram/TikTok footer) dan `005_jadwal_gelombang.sql` (jadwal gelombang pendaftaran).
+> Jalankan juga `supabase/migrations/006_token_version.sql` (pencabutan sesi login) bila database dibuat sebelum versi ini.
 
 ## A. Siapkan database (Supabase, gratis)
 1. Daftar di https://supabase.com → **New project** (catat password database, pilih region Singapore).

@@ -17,6 +17,8 @@ create table if not exists school_settings (
   tiktok_url text default 'https://www.tiktok.com/@mimu.buntaran',
   whatsapp_group_link text,
   committee_whatsapp text not null default '6285163088163',
+  registration_schedule_enabled boolean not null default false,   -- true = form online hanya bisa diisi saat ada gelombang yang dibuka
+  registration_waves jsonb not null default '[]'::jsonb,           -- [{"name","open_at","close_at"}] (ISO UTC), diatur Admin di Settings
   updated_at timestamptz not null default now()
 );
 insert into school_settings (id) values (1) on conflict (id) do nothing;
@@ -28,6 +30,7 @@ create table if not exists users (
   password_hash text not null,
   role text not null default 'GURU' check (role in ('ADMIN','GURU')),
   is_active boolean not null default true,
+  token_version int not null default 0,   -- dinaikkan untuk mencabut semua sesi login akun ini
   created_at timestamptz not null default now()
 );
 

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/supabase';
 import { requireUser } from '@/lib/auth';
 import { cleanSizes } from '@/lib/uniform';
+import { SETTINGS_TAG } from '@/lib/settings';
 export const dynamic = 'force-dynamic';
 
 // Ubah daftar jenis ukuran seragam — KHUSUS ADMIN. Data siswa yang sudah memakai ukuran lama tidak ikut berubah.
@@ -22,5 +24,6 @@ export async function PUT(req) {
     const hint = /uniform_sizes/.test(error.message || '') ? ' Database belum diperbarui: jalankan supabase/migrations/003_ukuran_seragam.sql di Supabase SQL Editor.' : '';
     return NextResponse.json({ error: `Gagal menyimpan jenis ukuran.${hint}` }, { status: 500 });
   }
+  revalidateTag(SETTINGS_TAG);
   return NextResponse.json({ ok: true, sizes });
 }

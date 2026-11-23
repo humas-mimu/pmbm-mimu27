@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/supabase';
-import { requireUser, hashPassword } from '@/lib/auth';
+import { requireUser, hashPassword, createSession } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(req, { params }) {
@@ -28,11 +28,29 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ error: 'Anda tidak dapat menonaktifkan / menurunkan akun Anda sendiri.' }, { status: 400 });
   }
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'Tidak ada perubahan.' }, { status: 400 });
+
+  // Cabut semua sesi lama bila password direset, peran berubah, atau akun dinonaktifkan/diaktifkan
+  // (tanpa ini, menonaktifkan lalu mengaktifkan lagi akan "menghidupkan" cookie lama).
+  // Bila kolom token_version belum ada (migrasi 006), langkah ini dilewati.
+  let nextVer = null;
+  if (patch.password_hash !== undefined || patch.role !== undefined || patch.is_active !== undefined) {
+    const { data: cur, error: curErr } = await db().from('users').select('role,is_active,token_version').eq('id', params.id).maybeSingle();
+    if (!curErr && cur) {
+      const changed = patch.password_hash !== undefined
+        || (patch.role !== undefined && patch.role !== cur.role)
+        || (patch.is_active !== undefined && patch.is_active !== cur.is_active);
+      if (changed) { nextVer = (cur.token_version ?? 0) + 1; patch.token_version = nextVer; }
+    }
+  }
   const { error } = await db().from('users').update(patch).eq('id', params.id);
   if (error) {
     if (error.code === '23505') return NextResponse.json({ error: 'Username sudah dipakai akun lain.' }, { status: 409 });
     console.error('PATCH /api/users:', error);
     return NextResponse.json({ error: 'Gagal memperbarui akun.' }, { status: 500 });
+  }
+  // Admin yang mereset password-nya sendiri tetap login (sesi barunya memakai versi terbaru)
+  if (nextVer !== null && params.id === auth.user.id) {
+    await createSession({ id: auth.user.id, role: auth.user.role, token_version: nextVer });
   }
   return NextResponse.json({ ok: true });
 }

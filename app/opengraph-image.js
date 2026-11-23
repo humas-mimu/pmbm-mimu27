@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { getSettings } from '@/lib/settings';
+import { getSettings, getSettingImage } from '@/lib/settings';
 import { academicYear } from '@/lib/utils';
 
 // Gambar pratinjau (thumbnail) saat link dibagikan ke WhatsApp / Facebook / Telegram, dll.
@@ -12,8 +12,8 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 // ImageResponse hanya mendukung PNG/JPEG/SVG (bukan WEBP) -> selain itu pakai logo bawaan di public/logo
-async function logoSrc(settings) {
-  const up = settings.logo_url || '';
+async function logoSrc() {
+  const up = (await getSettingImage('logo_url')) || '';
   if (/^data:image\/(png|jpeg|svg\+xml);base64,/.test(up)) return up;
   for (const [f, mime] of [['madrasah.png', 'image/png'], ['madrasah.svg', 'image/svg+xml']]) {
     try {
@@ -26,7 +26,7 @@ async function logoSrc(settings) {
 
 export default async function OgImage() {
   const s = await getSettings();
-  const logo = await logoSrc(s);
+  const logo = await logoSrc();
   return new ImageResponse(
     (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)', color: 'white', padding: 60 }}>

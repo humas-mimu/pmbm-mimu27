@@ -6,13 +6,22 @@ import { getSettings } from '@/lib/settings';
 import { getUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
+// Alamat dasar situs: wajib agar og:image berupa URL lengkap (https://...) yang bisa dibaca WhatsApp.
+// Isi env NEXT_PUBLIC_SITE_URL bila memakai domain sendiri (mis. https://pmbm.madrasahku.sch.id).
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'https://pmbm-mimu.vercel.app');
+
 export async function generateMetadata() {
   const s = await getSettings();
   const v = s.updated_at ? new Date(s.updated_at).getTime() : 0;
   const dyn = `/api/favicon?v=${v}`; // favicon hasil upload (ganti versi agar tidak tertahan cache)
+  const desc = `Pendaftaran Murid Baru Madrasah (PMBM) ${s.school_name} — daftar online dan cek status pendaftaran.`;
   return {
+    metadataBase: new URL(SITE_URL),
     title: { default: `Beranda — ${s.school_name}`, template: '%s — PMBM' },   // tiap halaman cukup mengisi nama menunya
-    description: `Pendaftaran Murid Baru Madrasah (PMBM) ${s.school_name} — daftar online dan cek status pendaftaran.`,
+    description: desc,
+    openGraph: { type: 'website', locale: 'id_ID', siteName: s.school_name, title: `${s.program_name} — ${s.school_name}`, description: desc },
+    twitter: { card: 'summary_large_image' },
     icons: s.favicon_url
       ? { icon: [{ url: dyn }], shortcut: [{ url: dyn }], apple: [{ url: dyn }] }
       : { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico', sizes: 'any' }], apple: [{ url: '/apple-touch-icon.png' }] },

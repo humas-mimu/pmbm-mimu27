@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth';
 import { cleanRegistrant } from '@/lib/validate';
 import { currentYear2, publicRegistrant } from '@/lib/utils';
 import { generateRegistrationId } from '@/lib/regid';
+import { readJson } from '@/lib/http';
 import { limited } from '@/lib/ratelimit';
 import { getSettings } from '@/lib/settings';
 import { getRegistrationStatus } from '@/lib/registration';
@@ -15,8 +16,11 @@ export async function POST(req) {
   if (limited(req, 'register', 15)) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429 });
   }
-  const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ error: 'Permintaan tidak valid.' }, { status: 400 });
+  // Payload pendaftaran sah hanya ±2 KB; di atas 16 KB pasti bukan dari formulir.
+  const parsed = await readJson(req, 16 * 1024);
+  if (parsed.error === 'TOO_LARGE') return NextResponse.json({ error: 'Data terlalu besar.' }, { status: 413 });
+  if (!parsed.body) return NextResponse.json({ error: 'Permintaan tidak valid.' }, { status: 400 });
+  const body = parsed.body;
 
   const { data, errors } = cleanRegistrant(body);
   if (Object.keys(errors).length) {

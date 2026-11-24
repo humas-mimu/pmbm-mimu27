@@ -104,6 +104,8 @@ Kolom Kabupaten/Kota, Kecamatan, dan Desa memberi **rekomendasi saat mengetik** 
 ## Catatan keamanan
 - Database dikunci (RLS tanpa policy); seluruh akses lewat server memakai service role key — **jangan pernah** membagikan key ini.
 - Cek data publik wajib 2 faktor: **ID Pendaftaran** (acak, hanya ada di tiket) + **NIK siswa**; respons hanya memuat field yang tampil (tanpa NIK orang tua & alamat, no. HP disamarkan) dan dibatasi percobaannya.
+- Input formulir dibatasi di server (`MAX_LEN` di `lib/validate.js`, dipakai juga sebagai `maxLength` di formulir): nama 100, alamat jalan 150, kota/kecamatan/desa/tempat lahir 60 karakter; karakter kontrol & tak terlihat dibuang; body permintaan publik dibatasi (register 16 KB, cek/login 2 KB → HTTP 413).
+- Ekspor CSV mengawali sel yang diawali `= + - @` (tab/CR) dengan tanda `'` agar tidak dibaca Excel sebagai rumus. XLSX tidak terpengaruh (sel selalu teks).
 - Format ID: `<JALUR>-<tahun><inisial 2 huruf>-<kode acak 4>`. Inisial = huruf pertama dua kata depan nama (1 kata: dua huruf pertama). Kode acak (tanpa I/L/O/U) adalah bagian yang dirahasiakan; ID tidak berubah walau nama diedit. ID lama `ONMB-26001` tetap diterima. Tabel `counters`/`next_seq` tidak dipakai lagi (dibiarkan).
 - Modal "NIK sudah terdaftar" (sesuai PRD) menampilkan nama, ID, program, dan waktu daftar bagi siapa pun yang mengetik NIK tersebut.
   Bila dirasa terlalu terbuka, ubah `app/api/check-nik/route.js`.

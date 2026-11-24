@@ -11,6 +11,7 @@ export async function PATCH(req, { params }) {
   if (b.name !== undefined) {
     const name = String(b.name).trim();
     if (!name) return NextResponse.json({ error: 'Nama wajib diisi.' }, { status: 422 });
+    if (name.length > 100) return NextResponse.json({ error: 'Nama maksimal 100 karakter.' }, { status: 422 });
     patch.name = name;
   }
   if (b.username !== undefined) {
@@ -22,6 +23,7 @@ export async function PATCH(req, { params }) {
   if (typeof b.is_active === 'boolean') patch.is_active = b.is_active;
   if (b.password !== undefined) {
     if (String(b.password).length < 8) return NextResponse.json({ error: 'Password minimal 8 karakter.' }, { status: 422 });
+    if (String(b.password).length > 200) return NextResponse.json({ error: 'Password maksimal 200 karakter.' }, { status: 422 });
     patch.password_hash = await hashPassword(String(b.password));
   }
   if (params.id === auth.user.id && (patch.is_active === false || (patch.role && patch.role !== 'ADMIN'))) {

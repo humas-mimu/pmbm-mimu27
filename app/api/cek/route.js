@@ -3,6 +3,7 @@ import { db } from '@/lib/supabase';
 import { limited } from '@/lib/ratelimit';
 import { cekRegistrant } from '@/lib/utils';
 import { normalizeRegistrationId } from '@/lib/regid';
+import { readJson } from '@/lib/http';
 export const dynamic = 'force-dynamic';
 
 // 2 faktor: ID Pendaftaran (acak, hanya ada di tiket) + NIK siswa. Keduanya harus cocok pada SATU baris.
@@ -11,7 +12,9 @@ export async function POST(req) {
   if (limited(req, 'cek', 10)) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429 });
   }
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readJson(req, 2 * 1024);
+  if (parsed.error === 'TOO_LARGE') return NextResponse.json({ error: 'Data terlalu besar.' }, { status: 413 });
+  const body = parsed.body || {};
   const id = normalizeRegistrationId(body.id);
   const nik = String(body.nik || '').replace(/\D/g, '');
   if (!id || !/^\d{16}$/.test(nik)) {

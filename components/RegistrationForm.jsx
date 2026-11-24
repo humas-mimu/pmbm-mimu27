@@ -6,7 +6,7 @@ import {
   AlertTriangle, ArrowLeft, BookOpenCheck, ClipboardCheck, GraduationCap, Globe, Loader2, LogOut,
   MessageCircle, RotateCcw, School, Send, ShieldAlert, Type, UserCheck, UserCog,
 } from 'lucide-react';
-import { AGAMA, DIGIT_FIELDS, TEXT_FIELDS, cleanRegistrant } from '@/lib/validate';
+import { AGAMA, DIGIT_FIELDS, MAX_LEN, TEXT_FIELDS, cleanRegistrant } from '@/lib/validate';
 import { academicYear, fmtDateTime, waPanitia } from '@/lib/utils';
 import { Field, Modal } from './ui';
 import AddressFields from './AddressFields';
@@ -21,7 +21,7 @@ const EMPTY = {
   nama_ayah: '', nik_ayah: '', nama_ibu: '', nik_ibu: '', wali_siswa: '', nama_wali_lain: '', nik_wali: '', no_hp_wali: '',
   is_akta_kelahiran: false, is_ktp_ortu: false, is_kk: false,
 };
-const MAXLEN = { nik_siswa: 16, nik_ayah: 16, nik_ibu: 16, nik_wali: 16, no_hp_wali: 15 };
+const MAXLEN = { ...MAX_LEN, nik_siswa: 16, nik_ayah: 16, nik_ibu: 16, nik_wali: 16, no_hp_wali: 15 };
 
 function Card({ n, title, sub, tone, children }) {
   const dark = tone === 'dark';

@@ -19,8 +19,10 @@ export async function POST(req) {
   const password = String(b.password || '');
   const role = b.role === 'ADMIN' ? 'ADMIN' : 'GURU';
   if (!name) return NextResponse.json({ error: 'Nama wajib diisi.' }, { status: 422 });
+  if (name.length > 100) return NextResponse.json({ error: 'Nama maksimal 100 karakter.' }, { status: 422 });
   if (!/^[a-z0-9._-]{3,30}$/.test(username)) return NextResponse.json({ error: 'Username 3–30 karakter (huruf kecil, angka, titik, strip).' }, { status: 422 });
   if (password.length < 8) return NextResponse.json({ error: 'Password minimal 8 karakter.' }, { status: 422 });
+  if (password.length > 200) return NextResponse.json({ error: 'Password maksimal 200 karakter.' }, { status: 422 });
   const { error } = await db().from('users').insert({ name, username, role, password_hash: await hashPassword(password) });
   if (error) {
     return NextResponse.json({ error: error.code === '23505' ? 'Username sudah dipakai.' : 'Gagal menambah akun.' }, { status: error.code === '23505' ? 409 : 500 });

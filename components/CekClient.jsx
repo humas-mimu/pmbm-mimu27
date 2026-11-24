@@ -6,11 +6,11 @@ import LoadingOverlay from './LoadingOverlay';
 import { ScaledTicket } from './Ticket';
 import { downloadTicket, ticketFilename } from '@/lib/ticket';
 import { hasUniform } from '@/lib/uniform';
-import { alamatLengkap, fmtDateLong, fmtDateTime, waliLabel } from '@/lib/utils';
+import { fmtDateLong, fmtDateTime, waPanitia, waliLabel } from '@/lib/utils';
 
 export default function CekClient({ settings }) {
-  const [q, setQ] = useState('');
-  const [dob, setDob] = useState('');
+  const [id, setId] = useState('');
+  const [nik, setNik] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [r, setR] = useState(null);
@@ -20,7 +20,7 @@ export default function CekClient({ settings }) {
   async function submit(e) {
     e.preventDefault(); setErr(''); setR(null); setBusy(true);
     try {
-      const res = await fetch('/api/cek', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, dob }) });
+      const res = await fetch('/api/cek', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, nik }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) setErr(j.error || 'Terjadi kesalahan.'); else setR(j.registrant);
     } catch { setErr('Tidak dapat terhubung ke server.'); }
@@ -35,7 +35,7 @@ export default function CekClient({ settings }) {
   const rows = r && [
     ['ID Pendaftaran', r.registration_id], ['Program', r.program_kelas], ['Nama Siswa', r.nama_siswa], ['NIK Siswa', r.nik_siswa],
     ['Tempat, Tgl Lahir', `${r.tempat_lahir}, ${fmtDateLong(r.tanggal_lahir)}`], ['Jenis Kelamin', r.jenis_kelamin], ['Agama', r.agama],
-    ['Asal Sekolah', r.asal_sekolah], ['Alamat', alamatLengkap(r)], ['Ayah', r.nama_ayah], ['Ibu', r.nama_ibu],
+    ['Asal Sekolah', r.asal_sekolah], ['Ayah', r.nama_ayah], ['Ibu', r.nama_ibu],
     ['Wali', waliLabel(r)], ['No. HP', r.no_hp_wali], ['Waktu Daftar', fmtDateTime(r.created_at)],
   ];
 
@@ -47,17 +47,21 @@ export default function CekClient({ settings }) {
 
   return (
     <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] xl:gap-8">
-      <LoadingOverlay open={busy || dl} title={dl ? 'Membuat tiket' : 'Mencari data'} messages={dl ? ['Menyusun tiket pendaftaran…', 'Membuat gambar PNG…'] : ['Mencari data pendaftaran…', 'Memverifikasi tanggal lahir…', 'Menyiapkan tiket…']} />
+      <LoadingOverlay open={busy || dl} title={dl ? 'Membuat tiket' : 'Mencari data'} messages={dl ? ['Menyusun tiket pendaftaran…', 'Membuat gambar PNG…'] : ['Mencari data pendaftaran…', 'Memverifikasi ID dan NIK…', 'Menyiapkan tiket…']} />
       {/* KIRI: form pencarian */}
       <form onSubmit={submit} className="pcard space-y-4">
         <h1 className="font-heading text-2xl font-extrabold">Cek Data Pendaftaran</h1>
-        <p className="text-sm text-slate-600">Masukkan NIK Siswa atau ID Pendaftaran, beserta tanggal lahir siswa. Anda hanya dapat melihat data milik sendiri.</p>
-        <div><label className="plabel">NIK Siswa / ID Pendaftaran</label>
-          <input className="pinput uppercase" value={q} onChange={(e) => setQ(e.target.value)} placeholder="16 digit NIK atau ONMB-26001" required /></div>
-        <div><label className="plabel">Tanggal Lahir Siswa</label>
-          <input type="date" className="pinput" value={dob} onChange={(e) => setDob(e.target.value)} required /></div>
+        <p className="text-sm text-slate-600">Masukkan ID Pendaftaran (tertera di tiket) dan NIK Siswa. Anda hanya dapat melihat data milik sendiri.</p>
+        <div><label className="plabel">ID Pendaftaran</label>
+          <input className="pinput uppercase" value={id} onChange={(e) => setId(e.target.value)} placeholder="ONMB-26AM-K7M4" maxLength={20} autoComplete="off" required /></div>
+        <div><label className="plabel">NIK Siswa</label>
+          <input className="pinput" inputMode="numeric" value={nik} onChange={(e) => setNik(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="16 digit NIK" autoComplete="off" required /></div>
         {err && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{err}</p>}
         <button className="pbtn-primary w-full" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}Cari Data</button>
+        <p className="text-center text-xs text-slate-500">
+          Lupa atau kehilangan ID Pendaftaran?{' '}
+          <a href={waPanitia(settings.committee_whatsapp, 'ID Pendaftaran yang lupa/hilang')} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 underline">Hubungi panitia</a>
+        </p>
       </form>
 
       {/* TENGAH: data hasil pencarian */}

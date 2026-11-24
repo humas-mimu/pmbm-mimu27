@@ -87,7 +87,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
     try {
       const r = await fetch(`/api/check-nik?nik=${form.nik_siswa}`);
       const j = await r.json();
-      if (j.exists) setDup(j.data);
+      if (j.exists) setDup(j.data || {});   // publik: tanpa detail; petugas login: ada detail
     } catch {}
   }
 
@@ -108,7 +108,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
         body: JSON.stringify(isEdit ? { action: 'update', ...form } : { ...form, offline_confirmed: !!staff && confirmed }),
       });
       const j = await res.json().catch(() => ({}));
-      if (res.status === 409 && j.duplicate) { setDup(j.duplicate); return; }
+      if (res.status === 409 && j.error === 'NIK_DUPLICATE') { setDup(j.duplicate || {}); return; }
       if (res.status === 422) { setErrors(j.errors || {}); setServerError(j.error || ''); return; }
       if (!res.ok) { setServerError(j.error || 'Terjadi kesalahan. Coba lagi.'); return; }
       if (isEdit) { router.push('/dashboard/rekap'); router.refresh(); return; }
@@ -350,13 +350,21 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
           <>
             <div className="mb-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
               <AlertTriangle className="mt-0.5 shrink-0" size={18} />
-              <p>NIK Siswa ini sudah terdaftar dalam sistem. Jika data ini bukan milik Anda atau terjadi kesalahan, silakan hubungi panitia PPDB/PMBM.</p>
+              <p>
+                {dup.registration_id
+                  ? 'NIK Siswa ini sudah terdaftar dalam sistem. Jika terjadi kesalahan, silakan hubungi panitia PPDB/PMBM.'
+                  : 'NIK Siswa ini sudah terdaftar. Untuk melihat data dan tiket, buka menu Cek Pendaftaran dengan ID Pendaftaran (tertera di tiket) + NIK. Jika bukan Anda yang mendaftarkan, atau ID hilang, silakan hubungi panitia.'}
+              </p>
             </div>
-            <dl className="space-y-2 rounded-xl bg-slate-50 p-3 text-sm">
-              {[['Nama Lengkap Siswa', dup.nama_siswa], ['ID Pendaftaran', dup.registration_id], ['Program Kelas', dup.program_kelas], ['Tanggal & Jam Daftar', fmtDateTime(dup.created_at)]].map(([k, v]) => (
-                <div key={k}><dt className="text-[11px] font-bold uppercase text-slate-500">{k}</dt><dd className="font-bold">{v}</dd></div>
-              ))}
-            </dl>
+            {dup.registration_id ? (
+              <dl className="space-y-2 rounded-xl bg-slate-50 p-3 text-sm">
+                {[['Nama Lengkap Siswa', dup.nama_siswa], ['ID Pendaftaran', dup.registration_id], ['Program Kelas', dup.program_kelas], ['Tanggal & Jam Daftar', fmtDateTime(dup.created_at)]].map(([k, v]) => (
+                  <div key={k}><dt className="text-[11px] font-bold uppercase text-slate-500">{k}</dt><dd className="font-bold">{v}</dd></div>
+                ))}
+              </dl>
+            ) : (
+              <a href="/cek-pendaftaran" className="pbtn-soft w-full">Buka Cek Pendaftaran</a>
+            )}
             <a className="pbtn-wa mt-4 w-full" target="_blank" rel="noopener noreferrer"
               href={waPanitia(settings.committee_whatsapp)}>
               <MessageCircle size={16} />Hubungi Panitia via WhatsApp

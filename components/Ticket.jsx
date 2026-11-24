@@ -38,7 +38,7 @@ export const Ticket = forwardRef(function Ticket({ registrant: r, settings: s },
           <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ flex: 1, background: '#2563EB', color: '#fff', borderRadius: 12, padding: '9px 12px' }}>
               <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, opacity: 0.85 }}>ID PENDAFTARAN</div>
-              <div style={{ ...H, fontWeight: 800, fontSize: 23, lineHeight: 1.15 }}>{r.registration_id}</div>
+              <div style={{ ...H, fontWeight: 800, fontSize: 17, lineHeight: 1.45, whiteSpace: 'nowrap' }}>{r.registration_id}</div>
             </div>
             <div style={{ flex: 1, background: '#059669', color: '#fff', borderRadius: 12, padding: '9px 12px' }}>
               <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, opacity: 0.85 }}>PROGRAM</div>

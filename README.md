@@ -4,8 +4,8 @@ Website Penerimaan Murid Baru Madrasah (Next.js + Supabase). Bisa di-hosting **g
 (alamat otomatis seperti `pmbm-manbaul-ulum.vercel.app`).
 
 **Jalur pendaftaran ditentukan otomatis oleh sesi login:**
-- Formulir ada di `/daftar` (beranda `/` berisi alur pendaftaran). Dibuka tanpa login → `ONLINE` (ID `ONMB-26001`)
-- Formulir dibuka saat Admin/Guru login → `OFFLINE` (ID `OFMB-26001`) + checklist berkas
+- Formulir ada di `/daftar` (beranda `/` berisi alur pendaftaran). Dibuka tanpa login → `ONLINE` (ID `ONMB-26AM-K7M4`)
+- Formulir dibuka saat Admin/Guru login → `OFFLINE` (ID `OFMB-26AM-K7M4`) + checklist berkas
 
 > **Sudah pernah menjalankan `schema.sql` versi lama?** Jalankan sekali, berurutan, di Supabase SQL Editor:
 > `supabase/migrations/001_nik_wali_favicon.sql` (kolom NIK Wali & Favicon) dan `supabase/migrations/002_social_links.sql` (konten sosmed Beranda).
@@ -103,7 +103,8 @@ Kolom Kabupaten/Kota, Kecamatan, dan Desa memberi **rekomendasi saat mengetik** 
 
 ## Catatan keamanan
 - Database dikunci (RLS tanpa policy); seluruh akses lewat server memakai service role key — **jangan pernah** membagikan key ini.
-- Cek data publik wajib 2 faktor (NIK/ID + tanggal lahir) dan dibatasi percobaannya.
+- Cek data publik wajib 2 faktor: **ID Pendaftaran** (acak, hanya ada di tiket) + **NIK siswa**; respons hanya memuat field yang tampil (tanpa NIK orang tua & alamat, no. HP disamarkan) dan dibatasi percobaannya.
+- Format ID: `<JALUR>-<tahun><inisial 2 huruf>-<kode acak 4>`. Inisial = huruf pertama dua kata depan nama (1 kata: dua huruf pertama). Kode acak (tanpa I/L/O/U) adalah bagian yang dirahasiakan; ID tidak berubah walau nama diedit. ID lama `ONMB-26001` tetap diterima. Tabel `counters`/`next_seq` tidak dipakai lagi (dibiarkan).
 - Modal "NIK sudah terdaftar" (sesuai PRD) menampilkan nama, ID, program, dan waktu daftar bagi siapa pun yang mengetik NIK tersebut.
   Bila dirasa terlalu terbuka, ubah `app/api/check-nik/route.js`.
 - Unduh/backup data berkala lewat tombol **Export Excel / CSV** (tersedia untuk Admin dan Guru). Hanya pendaftar **aktif** yang diekspor (arsip tidak ikut); kolom NIK, No. HP, RT, RW, dan Kode Pos berformat *Text* di Excel.

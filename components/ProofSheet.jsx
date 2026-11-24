@@ -36,7 +36,7 @@ export default async function ProofSheet({ registrant: r, settings: s, petugasNa
         </div>
         <div className={`shrink-0 rounded-xl px-4 py-2 text-center ${tahfidz ? 'bg-emerald-600 text-white' : 'bg-[#dbe4f4] text-[#3b4fc2]'}`}>
           <div className="text-[9px] font-medium leading-none opacity-80">Id Pendaftaran :</div>
-          <div className="mt-1 font-heading text-xl font-extrabold leading-tight tracking-wide">{r.registration_id}</div>
+          <div className="mt-1 whitespace-nowrap font-heading text-[16px] font-extrabold leading-tight tracking-wide">{r.registration_id}</div>
           <div className="my-1 h-px bg-current opacity-30" />
           <div className="text-xs font-bold uppercase tracking-wide">{r.program_kelas}</div>
         </div>

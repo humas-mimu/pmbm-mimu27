@@ -36,7 +36,7 @@ create table if not exists users (
 
 create table if not exists registrants (
   id uuid primary key default gen_random_uuid(),
-  registration_id text unique not null,            -- ONMB-26001 / OFMB-26001
+  registration_id text unique not null,            -- ONMB-26AM-K7M4 / OFMB-26AM-K7M4 (jalur-tahun+inisial-kode acak). Data lama: ONMB-26001
   registration_type text not null check (registration_type in ('ONLINE','OFFLINE')),
   program_kelas text not null check (program_kelas in ('TAHFIDZ','NON-TAHFIDZ')),
 

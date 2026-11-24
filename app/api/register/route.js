@@ -3,6 +3,7 @@ import { db } from '@/lib/supabase';
 import { getUser } from '@/lib/auth';
 import { cleanRegistrant } from '@/lib/validate';
 import { currentYear2, publicRegistrant } from '@/lib/utils';
+import { generateRegistrationId } from '@/lib/regid';
 import { limited } from '@/lib/ratelimit';
 import { getSettings } from '@/lib/settings';
 import { getRegistrationStatus } from '@/lib/registration';
@@ -48,17 +49,20 @@ export async function POST(req) {
   }
 
   const client = db();
-  const { data: dup } = await client.from('registrants').select(DUP_COLS).eq('nik_siswa', data.nik_siswa).maybeSingle();
-  if (dup) return NextResponse.json({ error: 'NIK_DUPLICATE', duplicate: dup }, { status: 409 });
+  // Pengunjung publik TIDAK boleh mendapat data pendaftar lain (ID Pendaftaran kini bersifat rahasia).
+  // Petugas yang login tetap melihat detailnya untuk membantu input offline.
+  const dupResponse = async () => {
+    if (!user) return NextResponse.json({ error: 'NIK_DUPLICATE' }, { status: 409 });
+    const { data: d } = await client.from('registrants').select(DUP_COLS).eq('nik_siswa', data.nik_siswa).maybeSingle();
+    return NextResponse.json({ error: 'NIK_DUPLICATE', duplicate: d }, { status: 409 });
+  };
+  const { data: dup } = await client.from('registrants').select('id').eq('nik_siswa', data.nik_siswa).maybeSingle();
+  if (dup) return dupResponse();
 
   const prefix = type === 'ONLINE' ? 'ONMB' : 'OFMB';
   const yy = currentYear2();
-  const { data: seq, error: seqErr } = await client.rpc('next_seq', { p_key: `${prefix}-${yy}` });
-  if (seqErr) return NextResponse.json({ error: 'Gagal membuat ID pendaftaran.' }, { status: 500 });
-
-  const row = {
+  const base = {
     ...data,
-    registration_id: `${prefix}-${yy}${String(seq).padStart(3, '0')}`,
     registration_type: type,
     input_by_user_id: user ? user.id : null,
     is_akta_kelahiran: user ? !!body.is_akta_kelahiran : false,
@@ -66,12 +70,22 @@ export async function POST(req) {
     is_kk: user ? !!body.is_kk : false,
   };
 
-  const { data: saved, error } = await client.from('registrants').insert(row).select().single();
+  // ID acak: bila kebetulan kembar (sangat jarang) buat ulang, bukan dianggap NIK ganda.
+  let saved = null;
+  let error = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await client.from('registrants')
+      .insert({ ...base, registration_id: generateRegistrationId(prefix, yy, data.nama_siswa) })
+      .select().single();
+    if (!res.error) { saved = res.data; error = null; break; }
+    error = res.error;
+    if (error.code === '23505' && /registration_id/.test(`${error.message} ${error.details || ''}`)) continue;
+    break;
+  }
   if (error) {
-    if (error.code === '23505') {
-      const { data: d2 } = await client.from('registrants').select(DUP_COLS).eq('nik_siswa', data.nik_siswa).maybeSingle();
-      return NextResponse.json({ error: 'NIK_DUPLICATE', duplicate: d2 }, { status: 409 });
-    }
+    // 23505 yang BUKAN karena registration_id = NIK didaftarkan bersamaan oleh pihak lain.
+    // (Tabrakan ID berulang 5x jatuh ke bawah sebagai kegagalan biasa, bukan dilaporkan sebagai NIK ganda.)
+    if (error.code === '23505' && !/registration_id/.test(`${error.message} ${error.details || ''}`)) return dupResponse();
     console.error('POST /api/register:', error);
     const hint = /nik_wali/.test(error.message || '') ? ' Database belum diperbarui: jalankan supabase/migrations/001_nik_wali_favicon.sql di Supabase SQL Editor.' : '';
     return NextResponse.json({ error: `Gagal menyimpan data.${hint}` }, { status: 500 });

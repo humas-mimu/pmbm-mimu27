@@ -1,29 +1,30 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/supabase';
 import { limited } from '@/lib/ratelimit';
-import { publicRegistrant } from '@/lib/utils';
+import { cekRegistrant } from '@/lib/utils';
+import { normalizeRegistrationId } from '@/lib/regid';
 export const dynamic = 'force-dynamic';
 
-// 2 faktor: (NIK siswa ATAU ID pendaftaran) + tanggal lahir. Hanya data milik sendiri.
+// 2 faktor: ID Pendaftaran (acak, hanya ada di tiket) + NIK siswa. Keduanya harus cocok pada SATU baris.
+// Pencarian hanya dengan NIK atau hanya dengan ID tidak tersedia. Pesan gagal sama untuk semua kasus.
 export async function POST(req) {
   if (limited(req, 'cek', 10)) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429 });
   }
   const body = await req.json().catch(() => ({}));
-  const q = String(body.query || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
-  const dob = String(body.dob || '').trim();
-  if (!q || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-    return NextResponse.json({ error: 'Isi NIK/ID Pendaftaran dan tanggal lahir.' }, { status: 400 });
+  const id = normalizeRegistrationId(body.id);
+  const nik = String(body.nik || '').replace(/\D/g, '');
+  if (!id || !/^\d{16}$/.test(nik)) {
+    return NextResponse.json({ error: 'Isi ID Pendaftaran (lihat di tiket) dan NIK Siswa 16 digit dengan benar.' }, { status: 400 });
   }
   const { data } = await db()
     .from('registrants')
     .select('*')
-    .or(`nik_siswa.eq.${q},registration_id.eq.${q}`)
-    .eq('tanggal_lahir', dob)
-    .limit(1)
+    .eq('registration_id', id)
+    .eq('nik_siswa', nik)
     .maybeSingle();
   if (!data) {
-    return NextResponse.json({ error: 'Data tidak ditemukan. Periksa kembali NIK/ID dan tanggal lahir.' }, { status: 404 });
+    return NextResponse.json({ error: 'ID Pendaftaran dan NIK tidak cocok. Periksa kembali tiket Anda.' }, { status: 404 });
   }
-  return NextResponse.json({ registrant: publicRegistrant(data) });
+  return NextResponse.json({ registrant: cekRegistrant(data) });
 }

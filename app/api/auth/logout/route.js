@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { destroySession, getUser, revokeSessions } from '@/lib/auth';
+import { destroySession, getSessionUser, revokeSessions } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 // Biasa: hapus cookie di perangkat ini saja (akun yang dipakai bersama tidak ikut terlempar).
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const b = await req.json().catch(() => ({}));
   if (b?.all === true) {
-    const user = await getUser();
+    const user = await getSessionUser();
     if (user) await revokeSessions(user.id);
   }
   destroySession();

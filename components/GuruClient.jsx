@@ -150,7 +150,7 @@ export default function GuruClient() {
 
       <Modal open={!!reset} onClose={() => setReset(null)} title={`Reset Password: ${reset?.name || ''}`}>
         <form onSubmit={doReset} className="space-y-3">
-          <Field label="Password Baru" required hint="Minimal 8 karakter. Password lama akan tidak berlaku.">
+          <Field label="Password Baru" required hint="Minimal 8 karakter. Password lama tidak berlaku lagi. Guru akan diminta membuat password baru saat login berikutnya.">
             <PasswordInput value={pw} onChange={setPw} />
           </Field>
           {err && <p className="text-sm font-medium text-red-600">{err}</p>}
@@ -162,6 +162,7 @@ export default function GuruClient() {
         {reveal && (
           <div className="space-y-4">
             <p className="text-sm text-slate-600">Berikan data ini kepada <b>{reveal.name}</b>. Password <b>hanya ditampilkan sekarang</b> dan tidak bisa dilihat lagi setelah jendela ini ditutup.</p>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs font-medium text-amber-900">Ini password <b>sementara</b>: pemilik akun akan diminta membuat password baru saat login berikutnya.</p>
             <dl className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <div><dt className="text-[11px] font-bold uppercase text-emerald-800">Username</dt><dd className="font-mono text-lg font-bold">{reveal.username}</dd></div>
               <div><dt className="text-[11px] font-bold uppercase text-emerald-800">Password</dt><dd className="break-all font-mono text-lg font-bold">{reveal.password}</dd></div>

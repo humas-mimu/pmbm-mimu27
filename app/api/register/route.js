@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 const DUP_COLS = 'nama_siswa,registration_id,program_kelas,created_at';
 
 export async function POST(req) {
-  if (limited(req, 'register', 15)) {
+  if (await limited(req, 'register', 15)) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429 });
   }
   // Payload pendaftaran sah hanya ±2 KB; di atas 16 KB pasti bukan dari formulir.
@@ -21,6 +21,10 @@ export async function POST(req) {
   if (parsed.error === 'TOO_LARGE') return NextResponse.json({ error: 'Data terlalu besar.' }, { status: 413 });
   if (!parsed.body) return NextResponse.json({ error: 'Permintaan tidak valid.' }, { status: 400 });
   const body = parsed.body;
+  // Honeypot: kolom tersembunyi yang hanya diisi bot. Pengguna asli diminta memuat ulang (bukan sukses palsu) bila autofill salah mengisinya.
+  if (typeof body.kontak_alt === 'string' && body.kontak_alt.trim() !== '') {
+    return NextResponse.json({ error: 'Permintaan tidak valid. Muat ulang halaman lalu coba lagi.' }, { status: 400 });
+  }
 
   const { data, errors } = cleanRegistrant(body);
   if (Object.keys(errors).length) {

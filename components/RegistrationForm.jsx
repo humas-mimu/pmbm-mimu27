@@ -55,6 +55,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
   const locked = !isEdit && !staff && gate.status.state !== 'open';
   const start = initial ? { ...EMPTY, ...initial, nama_wali_lain: initial.nama_wali_lain || '', nik_wali: initial.nik_wali || '' } : EMPTY;
   const [form, setForm] = useState(start);
+  const [trap, setTrap] = useState('');   // honeypot: manusia tidak pernah melihat/mengisinya, bot pengisi-semua-kolom mengisinya
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [dup, setDup] = useState(null);
@@ -105,7 +106,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
       const res = await fetch(isEdit ? `/api/registrants/${registrantId}` : '/api/register', {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isEdit ? { action: 'update', ...form } : { ...form, offline_confirmed: !!staff && confirmed }),
+        body: JSON.stringify(isEdit ? { action: 'update', ...form } : { ...form, kontak_alt: trap, offline_confirmed: !!staff && confirmed }),
       });
       const j = await res.json().catch(() => ({}));
       if (res.status === 409 && j.error === 'NIK_DUPLICATE') { setDup(j.duplicate || {}); return; }
@@ -186,6 +187,10 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
     <div className="relative">
     <form onSubmit={submit} className={`w-full transition ${locked ? 'pointer-events-none select-none blur-[6px]' : ''}`} noValidate
       inert={locked ? '' : undefined} aria-hidden={locked || undefined}>
+      {/* Honeypot anti-bot: disembunyikan dari pengguna & pembaca layar. Jangan diberi nama yang dikenali autofill. */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
+        <label>Kontak alternatif<input type="text" name="kontak_alt" tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} /></label>
+      </div>
       <div className="grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:gap-8">
         {/* ================= KOLOM KIRI ================= */}
         <div className="w-full space-y-6">

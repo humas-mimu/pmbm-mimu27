@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/supabase';
-import { requireUser, hashPassword, createSession } from '@/lib/auth';
+import { requireUser, hashPassword, createSession, updateUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(req, { params }) {
@@ -36,15 +36,26 @@ export async function PATCH(req, { params }) {
   // Bila kolom token_version belum ada (migrasi 006), langkah ini dilewati.
   let nextVer = null;
   if (patch.password_hash !== undefined || patch.role !== undefined || patch.is_active !== undefined) {
-    const { data: cur, error: curErr } = await db().from('users').select('role,is_active,token_version').eq('id', params.id).maybeSingle();
-    if (!curErr && cur) {
+    let cur = null;
+    for (const cols of ['role,is_active,token_version', 'role,is_active']) {   // kolom token_version baru ada setelah migrasi 006
+      const r = await db().from('users').select(cols).eq('id', params.id).maybeSingle();
+      if (!r.error) { cur = r.data; break; }
+      if (r.error.code !== '42703') break;
+    }
+    if (cur) {
       const changed = patch.password_hash !== undefined
         || (patch.role !== undefined && patch.role !== cur.role)
         || (patch.is_active !== undefined && patch.is_active !== cur.is_active);
-      if (changed) { nextVer = (cur.token_version ?? 0) + 1; patch.token_version = nextVer; }
+      if (changed && cur.token_version !== undefined) { nextVer = (cur.token_version ?? 0) + 1; patch.token_version = nextVer; }
+      // Wajib ganti password setelah reset: Guru = selalu; Admin = hanya bila belum pernah (tanda lama dibiarkan);
+      // reset password SENDIRI tidak mewajibkan apa pun.
+      if (patch.password_hash !== undefined) {
+        if (params.id === auth.user.id) patch.must_change_password = false;
+        else if ((patch.role ?? cur.role) === 'GURU') patch.must_change_password = true;
+      }
     }
   }
-  const { error } = await db().from('users').update(patch).eq('id', params.id);
+  const error = await updateUser(params.id, patch);
   if (error) {
     if (error.code === '23505') return NextResponse.json({ error: 'Username sudah dipakai akun lain.' }, { status: 409 });
     console.error('PATCH /api/users:', error);

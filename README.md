@@ -12,6 +12,8 @@ Website Penerimaan Murid Baru Madrasah (Next.js + Supabase). Bisa di-hosting **g
 > Lalu jalankan juga `supabase/migrations/003_ukuran_seragam.sql` (fitur Ukuran Seragam). Instalasi baru cukup `schema.sql`.
 > Migrasi lain, jalankan berurutan bila belum: `004_footer_sosmed.sql` (tautan Instagram/TikTok footer) dan `005_jadwal_gelombang.sql` (jadwal gelombang pendaftaran).
 > Jalankan juga `supabase/migrations/006_token_version.sql` (pencabutan sesi login) bila database dibuat sebelum versi ini.
+> Jalankan juga `supabase/migrations/007_rate_limit.sql` (pembatas percobaan terdistribusi). Tanpa migrasi ini situs tetap jalan, tetapi pembatas hanya berlaku per-instance (di log muncul peringatan `[ratelimit]`).
+> Jalankan juga `supabase/migrations/008_must_change_password.sql` (wajib ganti password saat login pertama). Tanpa migrasi ini situs tetap jalan, tetapi tidak ada paksaan ganti password. Migrasi ini juga menandai akun `admin` yang masih memakai password bawaan.
 
 ## A. Siapkan database (Supabase, gratis)
 1. Daftar di https://supabase.com → **New project** (catat password database, pilih region Singapore).
@@ -37,7 +39,8 @@ Website Penerimaan Murid Baru Madrasah (Next.js + Supabase). Bisa di-hosting **g
 
 ## D. Login pertama
 - Buka `/login` (tombol **Login** di navbar) → username `admin`, password `GantiSegera123!`
-- **Langsung ganti password**: menu *Akun Guru → Reset Password* pada akun admin.
+- Sistem **memaksa ganti password** saat login pertama (halaman `/ganti-password`); dashboard terkunci sampai password diganti.
+- **Login dan ganti password SEKARANG JUGA, sebelum alamat situs dibagikan ke siapa pun.** Password bawaan bersifat publik; siapa pun yang login lebih dulu dapat mengambil alih akun admin.
 - Isi menu **Settings** (logo, alamat, link grup WhatsApp, nomor panitia).
 - Buat akun Guru/Panitia di menu *Akun Guru*.
 
@@ -106,6 +109,11 @@ Kolom Kabupaten/Kota, Kecamatan, dan Desa memberi **rekomendasi saat mengetik** 
 - Cek data publik wajib 2 faktor: **ID Pendaftaran** (acak, hanya ada di tiket) + **NIK siswa**; respons hanya memuat field yang tampil (tanpa NIK orang tua & alamat, no. HP disamarkan) dan dibatasi percobaannya.
 - Input formulir dibatasi di server (`MAX_LEN` di `lib/validate.js`, dipakai juga sebagai `maxLength` di formulir): nama 100, alamat jalan 150, kota/kecamatan/desa/tempat lahir 60 karakter; karakter kontrol & tak terlihat dibuang; body permintaan publik dibatasi (register 16 KB, cek/login 2 KB → HTTP 413).
 - Ekspor CSV mengawali sel yang diawali `= + - @` (tab/CR) dengan tanda `'` agar tidak dibaca Excel sebagai rumus. XLSX tidak terpengaruh (sel selalu teks).
+- Pembatas percobaan (login, cek pendaftaran, cek NIK, daftar) disimpan di database (tabel `rate_limits`, fungsi `rate_hit`), jadi berlaku lintas instance serverless. Batas: login 10/menit per IP; daftar 15/menit; cek 10/menit; cek NIK 30/menit.
+- Penguncian login: 5 kegagalan/15 menit per (akun + IP) dan 30 kegagalan/jam per akun (semua IP). Kegagalan dihitung sama untuk akun yang tidak ada, jadi tidak membocorkan keberadaan akun. Konsekuensi: orang lain dapat mengunci login satu akun sementara (maks. 1 jam) dengan sengaja gagal dari banyak IP; sesi yang sudah login tidak terpengaruh. Ubah angkanya di `app/api/auth/login/route.js`.
+- IP klien dibaca dari `x-vercel-forwarded-for` / `x-real-ip` (diisi platform), lalu entri PALING KANAN `x-forwarded-for`. Di Vercel ini aman. Bila di-host sendiri di belakang nginx, set `proxy_set_header X-Real-IP $remote_addr;` agar klien tidak bisa memalsukan IP. Banyak pengguna di satu Wi-Fi? Naikkan `RATE_LIMIT_MULTIPLIER` (lihat `.env.example`).
+- Formulir pendaftaran punya honeypot (kolom tersembunyi `kontak_alt`); bila terisi, pendaftaran ditolak.
+- Wajib ganti password (`must_change_password`): akun baru buatan Admin (Guru maupun Admin) dan Guru yang passwordnya direset Admin harus membuat password baru saat login berikutnya; Admin hanya sekali (login pertama). Reset password Admin lain/diri sendiri tidak memaksa ulang. Selama belum diganti, akun itu dianggap belum login (dashboard, API staf, dan mode petugas di formulir terkunci). Password baru: min. 8 karakter, bukan username, bukan password umum/bawaan; berhasil ganti = sesi di perangkat lain dicabut. Guru yang sudah ada sebelum fitur ini tidak dipaksa; untuk memaksa semuanya: `update users set must_change_password = true where role = 'GURU';`
 - Format ID: `<JALUR>-<tahun><inisial 2 huruf>-<kode acak 4>`. Inisial = huruf pertama dua kata depan nama (1 kata: dua huruf pertama). Kode acak (tanpa I/L/O/U) adalah bagian yang dirahasiakan; ID tidak berubah walau nama diedit. ID lama `ONMB-26001` tetap diterima. Tabel `counters`/`next_seq` tidak dipakai lagi (dibiarkan).
 - Modal "NIK sudah terdaftar" (sesuai PRD) menampilkan nama, ID, program, dan waktu daftar bagi siapa pun yang mengetik NIK tersebut.
   Bila dirasa terlalu terbuka, ubah `app/api/check-nik/route.js`.

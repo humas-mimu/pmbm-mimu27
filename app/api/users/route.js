@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/supabase';
-import { requireUser, hashPassword } from '@/lib/auth';
+import { requireUser, hashPassword, insertUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
@@ -23,7 +23,8 @@ export async function POST(req) {
   if (!/^[a-z0-9._-]{3,30}$/.test(username)) return NextResponse.json({ error: 'Username 3–30 karakter (huruf kecil, angka, titik, strip).' }, { status: 422 });
   if (password.length < 8) return NextResponse.json({ error: 'Password minimal 8 karakter.' }, { status: 422 });
   if (password.length > 200) return NextResponse.json({ error: 'Password maksimal 200 karakter.' }, { status: 422 });
-  const { error } = await db().from('users').insert({ name, username, role, password_hash: await hashPassword(password) });
+  // Password awal dibuat Admin => pemilik akun WAJIB menggantinya saat login pertama
+  const error = await insertUser({ name, username, role, password_hash: await hashPassword(password), must_change_password: true });
   if (error) {
     return NextResponse.json({ error: error.code === '23505' ? 'Username sudah dipakai.' : 'Gagal menambah akun.' }, { status: error.code === '23505' ? 409 : 500 });
   }

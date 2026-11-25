@@ -31,6 +31,7 @@ create table if not exists users (
   role text not null default 'GURU' check (role in ('ADMIN','GURU')),
   is_active boolean not null default true,
   token_version int not null default 0,   -- dinaikkan untuk mencabut semua sesi login akun ini
+  must_change_password boolean not null default false,   -- true = wajib ganti password sebelum memakai dashboard
   created_at timestamptz not null default now()
 );
 
@@ -115,12 +116,55 @@ begin
 end $$;
 revoke all on function save_uniform_sizes(jsonb) from public, anon, authenticated;
 
+-- Pembatas percobaan (rate limit) terdistribusi untuk endpoint publik (login, cek, daftar, cek NIK)
+create table if not exists rate_limits (
+  key          text primary key,
+  window_start timestamptz not null default now(),
+  hits         int not null default 0
+);
+
+-- p_inc >= 1 : tambah hitungan (jendela tetap p_window detik); is_limited = hitungan melebihi p_limit.
+-- p_inc  = 0 : hanya mengintip (tidak menambah, tidak membuat baris); is_limited = hitungan sudah mencapai p_limit.
+create or replace function rate_hit(p_key text, p_window int, p_limit int, p_inc int default 1)
+returns table (is_limited boolean, cur_hits int, retry_after int)
+language plpgsql security definer set search_path = public as $$
+declare r rate_limits%rowtype;
+begin
+  if p_inc <= 0 then
+    select * into r from rate_limits where key = p_key;
+    if not found or r.window_start <= now() - make_interval(secs => p_window) then
+      return query select false, 0, 0;
+      return;
+    end if;
+    return query select r.hits >= p_limit, r.hits,
+      greatest(1, ceil(extract(epoch from (r.window_start + make_interval(secs => p_window) - now())))::int);
+    return;
+  end if;
+
+  insert into rate_limits as t (key, window_start, hits) values (p_key, now(), p_inc)
+  on conflict (key) do update set
+    window_start = case when t.window_start <= now() - make_interval(secs => p_window) then now() else t.window_start end,
+    hits         = case when t.window_start <= now() - make_interval(secs => p_window) then p_inc else t.hits + p_inc end
+  returning t.* into r;
+
+  -- bersih-bersih ringan: sesekali buang hitungan lama agar tabel tidak membengkak
+  if random() < 0.02 then
+    delete from rate_limits where window_start < now() - interval '1 day';
+  end if;
+
+  return query select r.hits > p_limit, r.hits,
+    greatest(1, ceil(extract(epoch from (r.window_start + make_interval(secs => p_window) - now())))::int);
+end $$;
+
+revoke all on function rate_hit(text, int, int, int) from public, anon, authenticated;
+
 -- KEAMANAN: aktifkan RLS tanpa policy => kunci publik (anon) tidak bisa membaca/menulis apa pun.
 -- Seluruh akses data hanya lewat server Next.js memakai service role key.
 alter table school_settings enable row level security;
 alter table users            enable row level security;
 alter table registrants      enable row level security;
 alter table counters         enable row level security;
+alter table rate_limits      enable row level security;
 
 -- HAK AKSES API: hanya SERVER (service_role) yang boleh memakai tabel/fungsi ini; anon & authenticated tidak punya akses sama sekali.
 -- Dibuat eksplisit agar tetap benar walau opsi "Grant API access to new tables automatically" dimatikan saat membuat proyek Supabase.
@@ -129,10 +173,12 @@ grant all on all tables in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 grant execute on function next_seq(text) to service_role;
 grant execute on function save_uniform_sizes(jsonb) to service_role;
+grant execute on function rate_hit(text, int, int, int) to service_role;
 revoke all on all tables in schema public from anon, authenticated;
 
--- Akun Admin awal. SEGERA ganti password setelah login pertama!
+-- Akun Admin awal. Sistem MEMAKSA ganti password saat login pertama (must_change_password = true).
+-- Segera login dan ganti password SEBELUM alamat situs dibagikan ke siapa pun.
 --   username: admin      password: GantiSegera123!
-insert into users (name, username, password_hash, role)
-values ('Administrator', 'admin', extensions.crypt('GantiSegera123!', extensions.gen_salt('bf', 10)), 'ADMIN')
+insert into users (name, username, password_hash, role, must_change_password)
+values ('Administrator', 'admin', extensions.crypt('GantiSegera123!', extensions.gen_salt('bf', 10)), 'ADMIN', true)
 on conflict (username) do nothing;

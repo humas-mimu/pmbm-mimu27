@@ -16,7 +16,7 @@ export default function LoginForm() {
       const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setErr(j.error || 'Login gagal.'); return; }
-      router.push('/dashboard'); router.refresh();
+      router.push(j.must_change_password ? '/ganti-password' : '/dashboard'); router.refresh();
     } catch { setErr('Tidak dapat terhubung ke server.'); }
     finally { setBusy(false); }
   }

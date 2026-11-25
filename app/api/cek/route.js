@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // 2 faktor: ID Pendaftaran (acak, hanya ada di tiket) + NIK siswa. Keduanya harus cocok pada SATU baris.
 // Pencarian hanya dengan NIK atau hanya dengan ID tidak tersedia. Pesan gagal sama untuk semua kasus.
 export async function POST(req) {
-  if (limited(req, 'cek', 10)) {
+  if (await limited(req, 'cek', 10)) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan. Coba lagi sebentar.' }, { status: 429 });
   }
   const parsed = await readJson(req, 2 * 1024);

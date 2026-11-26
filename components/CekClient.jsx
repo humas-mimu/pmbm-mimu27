@@ -1,30 +1,45 @@
 'use client';
-import { useRef, useState } from 'react';
-import { Download, FileSearch, Loader2, MessageCircle, Search, Ticket as TicketIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Download, FileSearch, Loader2, MessageCircle, RefreshCw, Search, Ticket as TicketIcon } from 'lucide-react';
 import { Badge } from './ui';
 import LoadingOverlay from './LoadingOverlay';
 import { ScaledTicket } from './Ticket';
 import { downloadTicket, ticketFilename } from '@/lib/ticket';
 import { hasUniform } from '@/lib/uniform';
-import { fmtDateLong, fmtDateTime, waPanitia, waliLabel } from '@/lib/utils';
+import { fmtDateLong, fmtDateTime, waliLabel } from '@/lib/utils';
 
 export default function CekClient({ settings }) {
-  const [id, setId] = useState('');
   const [nik, setNik] = useState('');
+  const [cap, setCap] = useState(null);   // { question, token } — soal pengaman
+  const [ans, setAns] = useState('');
+  const [capErr, setCapErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [r, setR] = useState(null);
   const [dl, setDl] = useState(false);
   const ref = useRef(null);
 
-  async function submit(e) {
-    e.preventDefault(); setErr(''); setR(null); setBusy(true);
+  async function loadCaptcha() {
+    setCap(null); setAns('');
     try {
-      const res = await fetch('/api/cek', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, nik }) });
+      const res = await fetch('/api/captcha', { cache: 'no-store' });
+      const j = await res.json();
+      if (!res.ok) throw new Error();
+      setCap(j); setCapErr('');
+    } catch { setCapErr('Soal pengaman gagal dimuat. Tekan tombol muat ulang di sebelahnya.'); }
+  }
+  useEffect(() => { loadCaptcha(); }, []);
+
+  async function submit(e) {
+    e.preventDefault(); setErr(''); setR(null);
+    if (!cap) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/cek', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nik, captcha_token: cap.token, captcha_answer: ans }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) setErr(j.error || 'Terjadi kesalahan.'); else setR(j.registrant);
     } catch { setErr('Tidak dapat terhubung ke server.'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); loadCaptcha(); }   // tiap soal hanya sekali pakai: selalu minta soal baru
   }
   async function download() {
     setDl(true);
@@ -47,21 +62,24 @@ export default function CekClient({ settings }) {
 
   return (
     <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] xl:gap-8">
-      <LoadingOverlay open={busy || dl} title={dl ? 'Membuat tiket' : 'Mencari data'} messages={dl ? ['Menyusun tiket pendaftaran…', 'Membuat gambar PNG…'] : ['Mencari data pendaftaran…', 'Memverifikasi ID dan NIK…', 'Menyiapkan tiket…']} />
+      <LoadingOverlay open={busy || dl} title={dl ? 'Membuat tiket' : 'Mencari data'} messages={dl ? ['Menyusun tiket pendaftaran…', 'Membuat gambar PNG…'] : ['Mencari data pendaftaran…', 'Memverifikasi NIK…', 'Menyiapkan tiket…']} />
       {/* KIRI: form pencarian */}
       <form onSubmit={submit} className="pcard space-y-4">
         <h1 className="font-heading text-2xl font-extrabold">Cek Data Pendaftaran</h1>
-        <p className="text-sm text-slate-600">Masukkan ID Pendaftaran (tertera di tiket) dan NIK Siswa. Anda hanya dapat melihat data milik sendiri.</p>
-        <div><label className="plabel">ID Pendaftaran</label>
-          <input className="pinput uppercase" value={id} onChange={(e) => setId(e.target.value)} placeholder="ONMB-26AM-K7M4" maxLength={20} autoComplete="off" required /></div>
+        <p className="text-sm text-slate-600">Masukkan NIK Siswa yang didaftarkan, lalu jawab soal pengaman. Hanya data pendaftaran yang tampil di halaman ini yang dapat dilihat.</p>
         <div><label className="plabel">NIK Siswa</label>
           <input className="pinput" inputMode="numeric" value={nik} onChange={(e) => setNik(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="16 digit NIK" autoComplete="off" required /></div>
+        <div>
+          <label className="plabel" htmlFor="cek-soal">Soal Pengaman</label>
+          <div className="flex items-center gap-2">
+            <div className="min-h-[2.75rem] flex-1 rounded-xl bg-slate-100 px-3 py-2.5 text-sm font-bold text-slate-800" aria-live="polite">{cap ? cap.question : 'Memuat soal…'}</div>
+            <button type="button" onClick={loadCaptcha} aria-label="Ganti soal" title="Ganti soal" className="pbtn-soft !px-3 !py-2.5"><RefreshCw size={15} /></button>
+          </div>
+          <input id="cek-soal" className="pinput mt-2" inputMode="numeric" value={ans} onChange={(e) => setAns(e.target.value.replace(/\D/g, '').slice(0, 3))} placeholder="Jawab dengan angka, contoh: 12" autoComplete="off" required />
+          {capErr && <p className="mt-1 text-xs font-medium text-rose-700">{capErr}</p>}
+        </div>
         {err && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{err}</p>}
-        <button className="pbtn-primary w-full" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}Cari Data</button>
-        <p className="text-center text-xs text-slate-500">
-          Lupa atau kehilangan ID Pendaftaran?{' '}
-          <a href={waPanitia(settings.committee_whatsapp, 'ID Pendaftaran yang lupa/hilang')} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 underline">Hubungi panitia</a>
-        </p>
+        <button className="pbtn-primary w-full" disabled={busy || !cap}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}Cari Data</button>
       </form>
 
       {/* TENGAH: data hasil pencarian */}

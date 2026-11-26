@@ -4,7 +4,7 @@ import { getUser } from '@/lib/auth';
 import { limited } from '@/lib/ratelimit';
 export const dynamic = 'force-dynamic';
 
-// Publik: hanya {exists} — tanpa nama, ID, atau tanggal (ID Pendaftaran bersifat rahasia).
+// Publik: hanya {exists} — tanpa nama, ID, atau tanggal.
 // Petugas yang login juga menerima detailnya untuk membantu input offline.
 export async function GET(req) {
   if (await limited(req, 'check-nik', 30)) return NextResponse.json({ exists: false }, { status: 429 });

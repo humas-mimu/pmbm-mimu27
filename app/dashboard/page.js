@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const actions = [
     ['/daftar', UserPlus, 'Input Pendaftaran Offline', 'Salin formulir tulis tangan wali murid'],
     ['/dashboard/rekap', ClipboardList, 'Rekap Data', 'Cari, verifikasi berkas, edit, cetak, export'],
-    ['/cek-pendaftaran', Search, 'Cek Pendaftaran', 'Lihat data pendaftar dengan ID Pendaftaran + NIK'],
+    ['/cek-pendaftaran', Search, 'Cek Pendaftaran', 'Lihat data pendaftar dengan NIK Siswa'],
     ...(user.role === 'ADMIN' ? [
       ['/dashboard/guru', Users, 'Akun Guru', 'Tambah, reset password, nonaktifkan akun'],
       ['/dashboard/sosmed', Share2, 'Konten Sosmed', 'Instagram, TikTok, YouTube di Beranda'],

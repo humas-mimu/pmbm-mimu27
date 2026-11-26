@@ -358,7 +358,7 @@ export default function RegistrationForm({ staff = null, settings, mode = 'creat
               <p>
                 {dup.registration_id
                   ? 'NIK Siswa ini sudah terdaftar dalam sistem. Jika terjadi kesalahan, silakan hubungi panitia PPDB/PMBM.'
-                  : 'NIK Siswa ini sudah terdaftar. Untuk melihat data dan tiket, buka menu Cek Pendaftaran dengan ID Pendaftaran (tertera di tiket) + NIK. Jika bukan Anda yang mendaftarkan, atau ID hilang, silakan hubungi panitia.'}
+                  : 'NIK Siswa ini sudah terdaftar. Untuk melihat data dan tiket, buka menu Cek Pendaftaran dengan NIK Siswa. Jika bukan Anda yang mendaftarkan, silakan hubungi panitia.'}
               </p>
             </div>
             {dup.registration_id ? (

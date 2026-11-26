@@ -6,11 +6,11 @@ import LoadingOverlay from './LoadingOverlay';
 import { ScaledTicket } from './Ticket';
 import { downloadTicket, ticketFilename } from '@/lib/ticket';
 import { hasUniform } from '@/lib/uniform';
-import { fmtDateLong, fmtDateTime, waliLabel } from '@/lib/utils';
+import { fmtDateLong, fmtDateTime, waPanitia, waliLabel } from '@/lib/utils';
 
 export default function CekClient({ settings }) {
   const [nik, setNik] = useState('');
-  const [cap, setCap] = useState(null);   // { question, token } — soal pengaman
+  const [cap, setCap] = useState(null);   // { image, hint, token } — soal pengaman bergambar
   const [ans, setAns] = useState('');
   const [capErr, setCapErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,17 +66,25 @@ export default function CekClient({ settings }) {
       {/* KIRI: form pencarian */}
       <form onSubmit={submit} className="pcard space-y-4">
         <h1 className="font-heading text-2xl font-extrabold">Cek Data Pendaftaran</h1>
-        <p className="text-sm text-slate-600">Masukkan NIK Siswa yang didaftarkan, lalu jawab soal pengaman. Hanya data pendaftaran yang tampil di halaman ini yang dapat dilihat.</p>
+        <p className="text-sm text-slate-600">Masukkan NIK Siswa yang didaftarkan, lalu jawab soal bergambar. Hanya data pendaftaran yang tampil di halaman ini yang dapat dilihat.</p>
         <div><label className="plabel">NIK Siswa</label>
           <input className="pinput" inputMode="numeric" value={nik} onChange={(e) => setNik(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="16 digit NIK" autoComplete="off" required /></div>
         <div>
           <label className="plabel" htmlFor="cek-soal">Soal Pengaman</label>
-          <div className="flex items-center gap-2">
-            <div className="min-h-[2.75rem] flex-1 rounded-xl bg-slate-100 px-3 py-2.5 text-sm font-bold text-slate-800" aria-live="polite">{cap ? cap.question : 'Memuat soal…'}</div>
-            <button type="button" onClick={loadCaptcha} aria-label="Ganti soal" title="Ganti soal" className="pbtn-soft !px-3 !py-2.5"><RefreshCw size={15} /></button>
+          <div className="relative">
+            {cap
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={cap.image} alt="Soal pengaman bergambar. Ikuti petunjuk di bawah gambar." className="aspect-[560/318] w-full select-none rounded-xl border border-slate-200 bg-white" draggable={false} />
+              : <div className="grid aspect-[560/318] w-full place-items-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">Memuat soal…</div>}
+            <button type="button" onClick={loadCaptcha} aria-label="Ganti soal" title="Ganti soal" className="pbtn-soft absolute right-2 top-2 !px-2.5 !py-2 shadow"><RefreshCw size={15} /></button>
           </div>
-          <input id="cek-soal" className="pinput mt-2" inputMode="numeric" value={ans} onChange={(e) => setAns(e.target.value.replace(/\D/g, '').slice(0, 3))} placeholder="Jawab dengan angka, contoh: 12" autoComplete="off" required />
+          <p className="mt-2 text-xs text-slate-600" aria-live="polite">{cap ? cap.hint : ''}</p>
+          <input id="cek-soal" className="pinput mt-2" inputMode="numeric" value={ans} onChange={(e) => setAns(e.target.value.replace(/\D/g, '').slice(0, 3))} placeholder="Tulis jawaban (angka)" autoComplete="off" required />
           {capErr && <p className="mt-1 text-xs font-medium text-rose-700">{capErr}</p>}
+          <p className="mt-2 text-center text-xs text-slate-500">
+            Soal sulit dilihat? Tekan tombol ganti soal, atau{' '}
+            <a href={waPanitia(settings.committee_whatsapp, 'Kesulitan membuka Cek Pendaftaran')} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 underline">hubungi panitia</a>.
+          </p>
         </div>
         {err && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{err}</p>}
         <button className="pbtn-primary w-full" disabled={busy || !cap}>{busy ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}Cari Data</button>
